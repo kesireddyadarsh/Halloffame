@@ -1695,10 +1695,6 @@ void domination(vector<Rover>* teamRover){
 }
 
 
-void crowding_distace(vector<Rover>* p_rover){
-    
-}
-
 /***************************
  Main
  **************************/
