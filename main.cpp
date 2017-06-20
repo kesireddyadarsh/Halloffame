@@ -1,9 +1,9 @@
 //
 //  main.cpp
-//  RoverDomain_CCEA
+//  HOF
 //
-//  Created by ak on 11/16/16.
-//  Copyright © 2016 ak. All rights reserved.
+//  Created by adarsh kesireddy on 6/19/17.
+//  Copyright © 2017 AK. All rights reserved.
 //
 
 #include <iostream>
@@ -44,6 +44,7 @@ public:
     double getOutputVal(void) const { return z_outputVal; }
     void feedForward(const Layer prevLayer);
     double transferFunction(double x);
+    
 };
 
 //This creates connection with neurons.
@@ -107,6 +108,11 @@ public:
     //Hall of fame
     bool hall_of_fame = false;
     
+    //NSGA II
+    vector<double> my_domination;
+    double number_dominated_me;
+    double my_rank;
+    double crowding_distance;
 };
 
 Net::Net(vector<unsigned> topology){
@@ -206,6 +212,8 @@ public:
 class Environment{
 public:
     vector<POI> individualPOI;
+    vector<POI> group_1;
+    vector<POI> group_2;
 };
 
 /************************
@@ -651,7 +659,7 @@ void survival_of_fittest(vector<Rover>* teamRover,int number_of_neural_network){
             }
             
             //check which difference is less
-            if (teamRover->at(rover_number).network_for_agent.at(random_number_1).difference_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).difference_reward_wrt_team) {
+            if (teamRover->at(rover_number).network_for_agent.at(random_number_1).global_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).global_reward_wrt_team) {
                 //Kill random_number_1
                 teamRover->at(rover_number).network_for_agent.erase(teamRover->at(rover_number).network_for_agent.begin()+random_number_1);
             }else{
@@ -734,11 +742,11 @@ void simulation( int team_number, vector<Rover>* teamRover, POI* individualPOI,d
      First for loop runs time_step second for loop runs size of policy_numbers
      So for each time step each policy from team will execute
      ******************************************************************************/
-//    FILE* p_pathRover_0;
-//    p_pathRover_0 = fopen("Rover_0.txt", "a");
-//    FILE* p_pathRover_1;
-//    p_pathRover_1 = fopen("Rover_1.txt", "a");
-    for (int time_step = 0 ; time_step < 200; time_step++) {
+    //        FILE* p_pathRover_0;
+    //        p_pathRover_0 = fopen("Rover_0.txt", "a");
+    //        FILE* p_pathRover_1;
+    //        p_pathRover_1 = fopen("Rover_1.txt", "a");
+    for (int time_step = 0 ; time_step < 2000; time_step++) {
         for (int rover_number = 0; rover_number < policy_numbers.size(); rover_number++) {
             if(VERBOSE)
                 cout<<"This is rover_number::"<<rover_number<<endl;
@@ -760,7 +768,7 @@ void simulation( int team_number, vector<Rover>* teamRover, POI* individualPOI,d
             
             teamRover->at(rover_number).network_for_agent.at(temp_variable_nn).feedForward(teamRover->at(rover_number).sensors); // scaled input into neural network
             for (int change_sensor_values = 0 ; change_sensor_values <teamRover->at(rover_number).sensors.size(); change_sensor_values++) {
-                    assert(!isnan(teamRover->at(rover_number).sensors.at(change_sensor_values)));
+                assert(!isnan(teamRover->at(rover_number).sensors.at(change_sensor_values)));
             }
             
             double dx = teamRover->at(rover_number).network_for_agent.at(temp_variable_nn).outputvaluesNN.at(0);
@@ -770,14 +778,15 @@ void simulation( int team_number, vector<Rover>* teamRover, POI* individualPOI,d
             assert(!isnan(dx));
             assert(!isnan(dy));
             teamRover->at(rover_number).move_rover(dx, dy);
-//            if (rover_number == 0) {
-//                fprintf(p_pathRover_0, "%f \t %f \n",teamRover->at(rover_number).x_position,teamRover->at(rover_number).y_position);
-//            }
-//            if (rover_number == 1) {
-//                fprintf(p_pathRover_1, "%f \t %f \n",teamRover->at(rover_number).x_position,teamRover->at(rover_number).y_position);
-//            }
+            //if (rover_number == 0) {
+            //fprintf(p_pathRover_0, "%f \t %f \n",teamRover->at(rover_number).x_position,teamRover->at(rover_number).y_position);
+            //}
+            //if (rover_number == 1) {
+            //fprintf(p_pathRover_1, "%f \t %f \n",teamRover->at(rover_number).x_position,teamRover->at(rover_number).y_position);
+            //}
             
             // calculate rover distance for each POI
+            
             for (int cal_dis =0; cal_dis<individualPOI->value_poi_vec.size(); cal_dis++) {
                 double x_distance_cal =((teamRover->at(rover_number).x_position) -(individualPOI->x_position_poi_vec.at(cal_dis)));
                 double y_distance_cal = ((teamRover->at(rover_number).y_position) -(individualPOI->y_position_poi_vec.at(cal_dis)));
@@ -789,8 +798,9 @@ void simulation( int team_number, vector<Rover>* teamRover, POI* individualPOI,d
             
         }
     }
-//    fclose(p_pathRover_1);
-//    fclose(p_pathRover_0);
+    //    fclose(p_pathRover_1);
+    //    fclose(p_pathRover_0);
+    
     //check if closest distance changing
     for(int rover_number = 0; rover_number < policy_numbers.size(); rover_number++){
         int temp_policy_number = policy_numbers.at(rover_number);
@@ -901,6 +911,794 @@ void select_hall_of_fame(vector<Rover>* teamRover,POI* individualPOI){
 
 
 
+/*****************************************************************
+ Test Rover in environment
+ ***************************************************************/
+
+// Tests Stationary POI and Stationary Rover in all directions
+bool POI_sensor_test(){
+    bool VERBOSE = false;
+    
+    bool passfail = false;
+    
+    bool pass1 = false;
+    bool pass2 = false;
+    bool pass3 = false;
+    bool pass4 = false;
+    
+    POI P;
+    Rover R;
+    
+    /// Stationary Rover
+    R.x_position = 0;
+    R.y_position = 0;
+    R.theta = 0; /// north
+    
+    P.value_poi = 10;
+    
+    /// POI directly north, sensor 0 should read; no others.
+    P.x_position_poi = 0.001;
+    P.y_position_poi = 1;
+    
+    // sense.
+    R.reset_sensors();
+    R.sense_poi(P.x_position_poi, P.y_position_poi, P.value_poi);
+    
+    if(R.sensors.at(0) != 0 && R.sensors.at(1) == 0 && R.sensors.at(2) ==0 && R.sensors.at(3) == 0){
+        pass1 = true;
+    }
+    
+    assert(pass1 == true);
+    
+    if(VERBOSE){
+        cout << "Direct north case: " << endl;
+        for(int sen = 0; sen < R.sensors.size(); sen++){
+            cout << R.sensors.at(sen) << "\t";
+        }
+        cout << endl;
+    }
+    
+    /// POI directly south, sensor 2 should read; no others.
+    P.x_position_poi = 0;
+    P.y_position_poi = -1;
+    
+    // sense.
+    R.reset_sensors();
+    R.sense_poi(P.x_position_poi, P.y_position_poi, P.value_poi);
+    
+    if(R.sensors.at(0) == 0 && R.sensors.at(1) == 0 && R.sensors.at(2) !=0 && R.sensors.at(3) == 0){
+        pass2 = true;
+    }
+    
+    assert(pass2 == true);
+    
+    if(VERBOSE){
+        cout << "Direct south case: " << endl;
+        for(int sen = 0; sen < R.sensors.size(); sen++){
+            cout << R.sensors.at(sen) << "\t";
+        }
+        cout << endl;
+    }
+    
+    /// POI directly east, sensor 1 should read; no others.
+    P.x_position_poi = 1;
+    P.y_position_poi = 0;
+    
+    // sense.
+    R.reset_sensors();
+    R.sense_poi(P.x_position_poi, P.y_position_poi, P.value_poi);
+    
+    if(R.sensors.at(0) == 0 && R.sensors.at(1) != 0 && R.sensors.at(2) ==0 && R.sensors.at(3) == 0){
+        pass3 = true;
+    }
+    
+    assert(pass3 == true);
+    
+    if(VERBOSE){
+        cout << "Direct east case: " << endl;
+        for(int sen = 0; sen < R.sensors.size(); sen++){
+            cout << R.sensors.at(sen) << "\t";
+        }
+        cout << endl;
+    }
+    
+    
+    /// POI directly west, sensor 3 should read; no others.
+    P.x_position_poi = -1;
+    P.y_position_poi = 0;
+    
+    // sense.
+    R.reset_sensors();
+    R.sense_poi(P.x_position_poi, P.y_position_poi, P.value_poi);
+    
+    if(R.sensors.at(0) == 0 && R.sensors.at(1) == 0 && R.sensors.at(2) ==0 && R.sensors.at(3) != 0){
+        pass4 = true;
+    }
+    
+    if(VERBOSE){
+        cout << "Direct west case: " << endl;
+        for(int sen = 0; sen < R.sensors.size(); sen++){
+            cout << R.sensors.at(sen) << "\t";
+        }
+        cout << endl;
+    }
+    assert(pass4 == true);
+    
+    
+    if(pass1 && pass2 && pass3 && pass4){
+        passfail = true;
+    }
+    assert(passfail == true);
+    return passfail;
+}
+
+//Test for stationary rovers test in all directions
+bool rover_sensor_test(){
+    bool passfail = false;
+    
+    bool pass5 = false;
+    bool pass6 = false;
+    bool pass7 = false;
+    bool pass8 = false;
+    
+    Rover R1;
+    Rover R2;
+    R1.x_position = 0;
+    R1.y_position = 0;
+    R1.theta = 0; // north
+    R2.theta = 0;
+    
+    // case 1, Rover 2 to the north
+    R2.x_position = 0;
+    R2.y_position = 1;
+    R1.reset_sensors();
+    R1.sense_rover(R2.x_position,R2.y_position);
+    /// sensor 4 should fire, none other.
+    if(R1.sensors.at(4) != 0 && R1.sensors.at(5) == 0 && R1.sensors.at(6) == 0 && R1.sensors.at(7) == 0){
+        pass5 = true;
+    }
+    assert(pass5 == true);
+    
+    // case 2, Rover 2 to the east
+    R2.x_position = 1;
+    R2.y_position = 0;
+    R1.reset_sensors();
+    R1.sense_rover(R2.x_position,R2.y_position);
+    /// sensor 5 should fire, none other.
+    if(R1.sensors.at(4) == 0 && R1.sensors.at(5) != 0 && R1.sensors.at(6) == 0 && R1.sensors.at(7) == 0){
+        pass6 = true;
+    }
+    assert(pass6 == true);
+    
+    // case 3, Rover 2 to the south
+    R2.x_position = 0;
+    R2.y_position = -1;
+    R1.reset_sensors();
+    R1.sense_rover(R2.x_position,R2.y_position);
+    /// sensor 6 should fire, none other.
+    if(R1.sensors.at(4) == 0 && R1.sensors.at(5) == 0 && R1.sensors.at(6) != 0 && R1.sensors.at(7) == 0){
+        pass7 = true;
+    }
+    assert(pass7 == true);
+    
+    // case 4, Rover 2 to the west
+    R2.x_position = -1;
+    R2.y_position = 0;
+    R1.reset_sensors();
+    R1.sense_rover(R2.x_position,R2.y_position);
+    /// sensor 7 should fire, none other.
+    if(R1.sensors.at(4) == 0 && R1.sensors.at(5) == 0 && R1.sensors.at(6) == 0 && R1.sensors.at(7) != 0){
+        pass8 = true;
+    }
+    assert(pass8 == true);
+    
+    if(pass5 && pass6 && pass7 && pass8){
+        passfail = true;
+    }
+    assert(passfail == true);
+    return passfail;
+}
+
+void custom_test(){
+    Rover R;
+    POI P;
+    R.x_position = 0;
+    R.y_position = 0;
+    R.theta = 90;
+    
+    P.x_position_poi = 0.56;
+    P.y_position_poi = -1.91;
+    P.value_poi = 100;
+    
+    R.reset_sensors();
+    R.sense_poi(P.x_position_poi,P.y_position_poi,P.value_poi);
+    
+    
+}
+
+//x and y position of poi
+vector<vector<double>> poi_positions;
+vector<double> poi_positions_loc;
+
+void stationary_rover_test(double x_start,double y_start){//Pass x_position,y_position
+    Rover R_obj; //Rover object
+    POI P_obj;
+    
+    R_obj.reset_sensors();
+    
+    //x and y position of poi
+    vector<vector<double>> poi_positions;
+    vector<double> poi_positions_loc;
+    
+    R_obj.x_position =x_start;
+    R_obj.y_position=y_start;
+    R_obj.theta=0.0;
+    int radius = 2;
+    
+    double angle=0;
+    
+    P_obj.value_poi=100;
+    
+    int quad_0=0,quad_1=0,quad_2=0,quad_3=0,quad_0_1=0;
+    while (angle<360) {
+        if ((0<=angle && 45>= angle)) {
+            quad_0++;
+        }else if ((45<angle && 135>= angle)) {
+            // do something in Q2
+            quad_1++;
+        }else if((135<angle && 225>= angle)){
+            //do something in Q3
+            quad_2++;
+        }else if((225<angle && 315>= angle)){
+            //do something in Q4
+            quad_3++;
+        }else if ((315<angle && 360> angle)){
+            quad_0_1++;
+        }
+        poi_positions_loc.push_back(R_obj.x_position+(radius*cos(angle * (PI /180))));
+        poi_positions_loc.push_back(R_obj.y_position+(radius*sin(angle * (PI /180))));
+        poi_positions.push_back(poi_positions_loc);
+        poi_positions_loc.clear();
+        angle+=7;
+    }
+    
+    vector<bool> checkPass_quad_1,checkPass_quad_2,checkPass_quad_3,checkPass_quad_0;
+    
+    for (int i=0; i<poi_positions.size(); i++) {
+        for (int j=0; j<poi_positions.at(i).size(); j++) {
+            P_obj.x_position_poi = poi_positions.at(i).at(j);
+            P_obj.y_position_poi = poi_positions.at(i).at(++j);
+            R_obj.sense_poi(P_obj.x_position_poi, P_obj.y_position_poi, P_obj.value_poi);
+            if (R_obj.sensors.at(0) != 0 && R_obj.sensors.at(1) == 0 && R_obj.sensors.at(2) ==0 && R_obj.sensors.at(3) == 0) {
+                checkPass_quad_0.push_back(true);
+            }else if (R_obj.sensors.at(0) == 0 && R_obj.sensors.at(1) != 0 && R_obj.sensors.at(2) ==0 && R_obj.sensors.at(3) == 0){
+                checkPass_quad_1.push_back(true);
+            }else if (R_obj.sensors.at(0) == 0 && R_obj.sensors.at(1) == 0 && R_obj.sensors.at(2) !=0 && R_obj.sensors.at(3) == 0){
+                checkPass_quad_2.push_back(true);
+            }else if (R_obj.sensors.at(0) == 0 && R_obj.sensors.at(1) == 0 && R_obj.sensors.at(2) ==0 && R_obj.sensors.at(3) != 0){
+                checkPass_quad_3.push_back(true);
+            }
+            R_obj.reset_sensors();
+        }
+    }
+    if (checkPass_quad_0.size() != (quad_0_1+quad_0)) {
+        cout<<"Something wrong with quad_0"<<endl;;
+    }else if (checkPass_quad_1.size() != (quad_1)){
+        cout<<"Something wrong with quad_1"<<endl;
+    }else if (checkPass_quad_2.size() != quad_2){
+        cout<<"Something wrong with quad_2"<<endl;
+    }else if (checkPass_quad_3.size() != quad_3){
+        cout<<"Something wrong with quad_3"<<endl;
+    }
+}
+
+void find_x_y_stationary_rover_test_1(double angle, double radius, double x_position, double y_position){
+    poi_positions_loc.push_back(x_position+(radius*cos(angle * (PI /180))));
+    poi_positions_loc.push_back(y_position+(radius*sin(angle * (PI /180))));
+}
+
+void stationary_rover_test_1(double x_start,double y_start){
+    bool VERBOSE = false;
+    Rover R_obj; //Rover object
+    POI P_obj;
+    
+    R_obj.reset_sensors();
+    
+    R_obj.x_position =x_start;
+    R_obj.y_position=y_start;
+    R_obj.theta=0.0;
+    int radius = 2;
+    
+    bool check_pass = false;
+    
+    double angle=0;
+    
+    P_obj.value_poi=100;
+    
+    while (angle<360) {
+        find_x_y_stationary_rover_test_1(angle, radius, R_obj.x_position, R_obj.y_position);
+        P_obj.x_position_poi = poi_positions_loc.at(0);
+        P_obj.y_position_poi = poi_positions_loc.at(1);
+        R_obj.sense_poi(P_obj.x_position_poi, P_obj.y_position_poi, P_obj.value_poi);
+        if (R_obj.sensors.at(0) != 0 && R_obj.sensors.at(1) == 0 && R_obj.sensors.at(2) ==0 && R_obj.sensors.at(3) == 0) {
+            if (VERBOSE) {
+                cout<<"Pass Quad 0"<<endl;
+            }
+            check_pass = true;
+        }else  if (R_obj.sensors.at(0) == 0 && R_obj.sensors.at(1) != 0 && R_obj.sensors.at(2) ==0 && R_obj.sensors.at(3) == 0) {
+            if (VERBOSE) {
+                cout<<"Pass Quad 1"<<endl;
+                
+            }
+            check_pass = true;
+        }else if (R_obj.sensors.at(0) == 0 && R_obj.sensors.at(1) == 0 && R_obj.sensors.at(2) !=0 && R_obj.sensors.at(3) == 0) {
+            if (VERBOSE) {
+                cout<<"Pass Quad 2"<<endl;
+            }
+            check_pass = true;
+        }else if (R_obj.sensors.at(0) == 0 && R_obj.sensors.at(1) == 0 && R_obj.sensors.at(2) ==0 && R_obj.sensors.at(3) != 0) {
+            if (VERBOSE) {
+                cout<<"Pass Quad 3"<<endl;
+            }
+            check_pass = true;
+        }else{
+            cout<<"Issue at an angle ::"<<angle<<" with x_position and y_position"<<R_obj.x_position<<R_obj.y_position<<endl;
+            exit(10);
+        }
+        assert(check_pass==true);
+        poi_positions_loc.clear();
+        R_obj.reset_sensors();
+        angle+=7;
+        check_pass=false;
+    }
+}
+
+void stationary_poi_test(double x_start,double y_start){
+    bool VERBOSE = false;
+    Rover R_obj; //Rover object
+    POI P_obj; // POI object
+    vector<double> rover_position_loc;
+    
+    R_obj.reset_sensors();
+    
+    P_obj.x_position_poi=x_start;
+    P_obj.y_position_poi=y_start;
+    P_obj.value_poi=100;
+    R_obj.theta=0.0;
+    
+    R_obj.x_position =0.0;
+    R_obj.y_position =0.0;
+    
+    bool check_pass = false;
+    
+    for (int i=0; i<=R_obj.theta; ) {
+        if (R_obj.theta > 360) {
+            break;
+        }
+        R_obj.sense_poi(P_obj.x_position_poi, P_obj.y_position_poi, P_obj.value_poi);
+        if (VERBOSE) {
+            cout<<endl;
+            for (int j=0; j<R_obj.sensors.size(); j++) {
+                cout<<R_obj.sensors.at(j)<<"\t";
+            }
+            cout<<endl;
+        }
+        if (R_obj.sensors.at(0) != 0 && R_obj.sensors.at(1) == 0 && R_obj.sensors.at(2) ==0 && R_obj.sensors.at(3) == 0) {
+            if (VERBOSE) {
+                cout<<"Pass Quad 0"<<endl;
+            }
+            check_pass = true;
+        }else  if (R_obj.sensors.at(0) == 0 && R_obj.sensors.at(1) != 0 && R_obj.sensors.at(2) ==0 && R_obj.sensors.at(3) == 0) {
+            if (VERBOSE) {
+                cout<<"Pass Quad 1";
+            }
+            check_pass = true;
+        }else if (R_obj.sensors.at(0) == 0 && R_obj.sensors.at(1) == 0 && R_obj.sensors.at(2) !=0 && R_obj.sensors.at(3) == 0) {
+            if (VERBOSE) {
+                cout<<"Pass Quad 2";
+            }
+            check_pass = true;
+        }else if (R_obj.sensors.at(0) == 0 && R_obj.sensors.at(1) == 0 && R_obj.sensors.at(2) ==0 && R_obj.sensors.at(3) != 0) {
+            if (VERBOSE) {
+                cout<<"Pass Quad 3";
+            }
+            check_pass = true;
+        }else{
+            cout<<"Issue at an angle ::"<<R_obj.theta<<" with x_position and y_position"<<P_obj.x_position_poi<<P_obj.y_position_poi<<endl;
+            exit(10);
+        }
+        assert(check_pass==true);
+        i+=7;
+        R_obj.theta+=7;
+        R_obj.reset_sensors();
+    }
+}
+
+void two_rovers_test(double x_start, double y_start){
+    bool VERBOSE = false;
+    Rover R_obj; //Rover object
+    POI P_obj; // POI object
+    vector<double> rover_position_loc;
+    
+    R_obj.reset_sensors();
+    
+    double otherRover_x = x_start;
+    double otherRover_y = y_start;
+    P_obj.value_poi=100;
+    R_obj.theta=0.0;
+    
+    R_obj.x_position =0.0;
+    R_obj.y_position =0.0;
+    
+    bool check_pass = false;
+    
+    for (int i=0; i<=R_obj.theta; ) {
+        if (R_obj.theta > 360) {
+            break;
+        }
+        R_obj.sense_rover(otherRover_x, otherRover_y);
+        if (VERBOSE) {
+            cout<<endl;
+            for (int j=0; j<R_obj.sensors.size(); j++) {
+                cout<<R_obj.sensors.at(j)<<"\t";
+            }
+            cout<<endl;
+        }
+        if (R_obj.sensors.at(4) != 0 && R_obj.sensors.at(5) == 0 && R_obj.sensors.at(6) ==0 && R_obj.sensors.at(7) == 0) {
+            if ((0<=R_obj.theta && 45>= R_obj.theta)||(315<R_obj.theta && 360>= R_obj.theta)) {
+                if (VERBOSE) {
+                    cout<<"Pass Quad 0"<<endl;
+                }
+                check_pass = true;
+            }
+            
+        }else  if (R_obj.sensors.at(4) == 0 && R_obj.sensors.at(5) != 0 && R_obj.sensors.at(6) ==0 && R_obj.sensors.at(7) == 0) {
+            if((45<R_obj.theta && 135>= R_obj.theta)){
+                if (VERBOSE) {
+                    cout<<"Pass Quad 1";
+                }
+                check_pass = true;
+            }
+        }else if (R_obj.sensors.at(4) == 0 && R_obj.sensors.at(5) == 0 && R_obj.sensors.at(6) !=0 && R_obj.sensors.at(7) == 0) {
+            if((135<R_obj.theta && 225>= R_obj.theta)){
+                if (VERBOSE) {
+                    cout<<"Pass Quad 2";
+                }
+                check_pass = true;
+            }
+        }else if (R_obj.sensors.at(4) == 0 && R_obj.sensors.at(5) == 0 && R_obj.sensors.at(6) ==0 && R_obj.sensors.at(7) != 0) {
+            if((225<R_obj.theta && 315>= R_obj.theta)){
+                if (VERBOSE) {
+                    cout<<"Pass Quad 3";
+                }
+                check_pass = true;
+            }
+        }else{
+            cout<<"Issue at an angle ::"<<R_obj.theta<<" with x_position and y_position"<<P_obj.x_position_poi<<P_obj.y_position_poi<<endl;
+            exit(10);
+        }
+        assert(check_pass==true);
+        i+=7;
+        R_obj.theta+=7;
+        R_obj.reset_sensors();
+    }
+    
+}
+
+vector<double> row_values;
+vector<vector<double>> assert_check_values;
+
+void fill_assert_check_values(){
+    //First set of x , y thetha values
+    for(int i=0;i<3;i++)
+        row_values.push_back(0);
+    assert_check_values.push_back(row_values);
+    row_values.clear();
+    
+    //second set of x,y,thetha values
+    row_values.push_back(0);
+    row_values.push_back(1);
+    row_values.push_back(0);
+    assert_check_values.push_back(row_values);
+    row_values.clear();
+    
+    //third set of x,y,thetha values
+    row_values.push_back(1);
+    row_values.push_back(2);
+    row_values.push_back(45);
+    assert_check_values.push_back(row_values);
+    row_values.clear();
+    
+    //fourth set of x,y,thetha values
+    row_values.push_back(1);
+    row_values.push_back(3);
+    row_values.push_back(0);
+    assert_check_values.push_back(row_values);
+    row_values.clear();
+    
+    //fifth set of x,y,thetha values
+    row_values.push_back(0);
+    row_values.push_back(4);
+    row_values.push_back(315);
+    assert_check_values.push_back(row_values);
+    row_values.clear();
+    
+    //sixth set of x,y,thetha values
+    row_values.push_back(0);
+    row_values.push_back(5);
+    row_values.push_back(0);
+    assert_check_values.push_back(row_values);
+    row_values.clear();
+    
+}
+
+bool tolerance(double delta_maniplate,double check_value){
+    double delta = 0.0000001;
+    if (((delta+ delta_maniplate)>check_value)|| ((delta- delta_maniplate)<check_value) || (( delta_maniplate)==check_value)) {
+        return true;
+    }else{
+        return false;
+    }
+}
+
+
+void test_path(double x_start, double y_start){
+    bool VERBOSE = false;
+    Rover R_obj;
+    POI P_obj;
+    
+    //given
+    R_obj.x_position=x_start;
+    R_obj.y_position=y_start;
+    R_obj.theta=0.0;
+    
+    P_obj.x_position_poi=1.0;
+    P_obj.y_position_poi=1.0;
+    P_obj.value_poi=100;
+    
+    
+    
+    fill_assert_check_values();
+    
+    int step_number = 0;
+    bool check_assert = false;
+    
+    if (VERBOSE) {
+        cout<<R_obj.x_position<<"\t"<<R_obj.y_position<<"\t"<<R_obj.theta<<endl;
+    }
+    if (step_number==0) {
+        if(tolerance(R_obj.x_position, assert_check_values.at(step_number).at(0))){
+            if(tolerance(R_obj.y_position, assert_check_values.at(step_number).at(1))){
+                if(tolerance(R_obj.theta, assert_check_values.at(step_number).at(2))){
+                    check_assert=true;
+                    step_number++;
+                }
+            }
+        }
+    }
+    assert(check_assert);
+    check_assert=false;
+    
+    double dx=0.0,dy=1.0;
+    R_obj.move_rover(dx, dy);
+    if (VERBOSE) {
+        cout<<R_obj.x_position<<"\t"<<R_obj.y_position<<"\t"<<R_obj.theta<<endl;
+    }
+    if (step_number==1) {
+        if(tolerance(R_obj.x_position, assert_check_values.at(step_number).at(0))){
+            if(tolerance(R_obj.y_position, assert_check_values.at(step_number).at(1))){
+                if(tolerance(R_obj.theta, assert_check_values.at(step_number).at(2))){
+                    check_assert=true;
+                    step_number++;
+                }
+            }
+        }
+    }
+    assert(check_assert);
+    check_assert=false;
+    
+    
+    dx=1.0;
+    dy=1.0;
+    R_obj.move_rover(dx, dy);
+    if (VERBOSE) {
+        cout<<R_obj.x_position<<"\t"<<R_obj.y_position<<"\t"<<R_obj.theta<<endl;
+    }
+    if (step_number==2) {
+        if(tolerance(R_obj.x_position, assert_check_values.at(step_number).at(0))){
+            if(tolerance(R_obj.y_position, assert_check_values.at(step_number).at(1))){
+                if(tolerance(R_obj.theta, assert_check_values.at(step_number).at(2))){
+                    check_assert=true;
+                    step_number++;
+                }
+            }
+        }
+    }
+    assert(check_assert);
+    check_assert=false;
+    
+    dx=-1/sqrt(2.0);
+    dy=1/sqrt(2.0);
+    R_obj.move_rover(dx, dy);
+    R_obj.reset_sensors();
+    if (VERBOSE) {
+        cout<<R_obj.x_position<<"\t"<<R_obj.y_position<<"\t"<<R_obj.theta<<endl;
+    }
+    if (step_number==3) {
+        if(tolerance(R_obj.x_position, assert_check_values.at(step_number).at(0))){
+            if(tolerance(R_obj.y_position, assert_check_values.at(step_number).at(1))){
+                if(tolerance(R_obj.theta, assert_check_values.at(step_number).at(2))){
+                    check_assert=true;
+                    step_number++;
+                }
+            }
+        }
+    }
+    assert(check_assert);
+    check_assert=false;
+    
+    dx=-1.0;
+    dy=1.0;
+    R_obj.move_rover(dx, dy);
+    R_obj.reset_sensors();
+    if (VERBOSE) {
+        cout<<R_obj.x_position<<"\t"<<R_obj.y_position<<"\t"<<R_obj.theta<<endl;
+    }
+    if (step_number==4) {
+        if(tolerance(R_obj.x_position, assert_check_values.at(step_number).at(0))){
+            if(tolerance(R_obj.y_position, assert_check_values.at(step_number).at(1))){
+                if(tolerance(R_obj.theta, assert_check_values.at(step_number).at(2))){
+                    check_assert=true;
+                    step_number++;
+                }
+            }
+        }
+    }
+    assert(check_assert);
+    check_assert=false;
+    
+    dx=1/sqrt(2.0);
+    dy=1/sqrt(2.0);
+    R_obj.move_rover(dx, dy);
+    R_obj.reset_sensors();
+    if (VERBOSE) {
+        cout<<R_obj.x_position<<"\t"<<R_obj.y_position<<"\t"<<R_obj.theta<<endl;
+    }
+    if (step_number==5) {
+        if(tolerance(R_obj.x_position, assert_check_values.at(step_number).at(0))){
+            if(tolerance(R_obj.y_position, assert_check_values.at(step_number).at(1))){
+                if(tolerance(R_obj.theta, assert_check_values.at(step_number).at(2))){
+                    check_assert=true;
+                    step_number++;
+                }
+            }
+        }
+    }
+    assert(check_assert);
+    check_assert=false;
+    
+}
+
+vector<vector<double>> point_x_y_circle;
+vector<double> temp;
+
+void find_x_y_test_circle_path(double start_x_position,double start_y_position,double angle){
+    double radius = 1.0;
+    temp.push_back(start_x_position+(radius*cos(angle * (PI /180))));
+    temp.push_back(start_y_position+(radius*sin(angle * (PI/180))));
+}
+
+void test_circle_path(double x_start,double y_start){
+    bool VERBOSE = false;
+    Rover R_obj;
+    POI P_obj;
+    
+    P_obj.x_position_poi=0.0;
+    P_obj.y_position_poi=0.0;
+    P_obj.value_poi=100.0;
+    
+    if (VERBOSE) {
+        cout<<R_obj.x_position<<"\t"<<R_obj.y_position<<"\t"<<R_obj.theta<<endl;
+    }
+    
+    double dx=0.0,dy=1.0;
+    double angle=0.0;
+    
+    for(;angle<=360;){
+        R_obj.x_position=x_start;
+        R_obj.y_position=y_start;
+        R_obj.theta=0.0;
+        find_x_y_test_circle_path(x_start, y_start,angle);
+        dx=temp.at(0);
+        dy=temp.at(1);
+        R_obj.move_rover(dx, dy);
+        assert(tolerance(R_obj.x_position, dx));
+        assert(tolerance(R_obj.y_position, dy));
+        assert(tolerance(R_obj.theta, angle));
+        temp.clear();
+        angle+=15.0;
+    }
+    
+}
+
+void test_all_sensors(){
+    
+    POI_sensor_test();
+    rover_sensor_test();
+    custom_test();
+    double x_start = 0.0, y_start = 0.0;
+    stationary_rover_test(x_start,y_start);
+    stationary_rover_test_1(x_start, y_start);
+    stationary_poi_test(x_start,y_start);
+    two_rovers_test(x_start,y_start);
+    test_path(x_start,y_start);
+    x_start = 0.0, y_start = 0.0;
+    test_circle_path(x_start,y_start);
+    
+}
+
+/********************************************************************
+ NSGA II Function
+ 1. Domination - Fills all domination for each network and finds its rank if its zero
+ 2. Crowding Distance - Finds the crowding distance
+ *******************************************************************/
+
+void domination(vector<Rover>* teamRover){
+    bool verbose = true;
+    
+    if (verbose) {
+        for (int temp = 0; temp < teamRover->at(0).network_for_agent.size(); temp++) {
+            cout<<teamRover->at(0).network_for_agent.at(temp).global_reward_wrt_team<<endl;
+        }
+    }
+    
+    //First loop checks for itself
+    for (int rover_number =0; rover_number< teamRover->size(); rover_number++) {
+        for (int check_indi_domination = 0; check_indi_domination < teamRover->at(rover_number).network_for_agent.size(); check_indi_domination++) {
+            //assgin all number_dominate_me to 0
+            teamRover->at(rover_number).network_for_agent.at(check_indi_domination).number_dominated_me = 0;
+            //            cout<<teamRover->at(rover_number).network_for_agent.at(check_indi_domination).global_reward_wrt_team<<endl;
+            //second loop to check with other elements
+            for (int second_domination = 0; second_domination <teamRover->at(rover_number).network_for_agent.size(); second_domination++) {
+                if(check_indi_domination == second_domination){
+                    continue;
+                }else{
+                    if (teamRover->at(rover_number).network_for_agent.at(check_indi_domination).global_reward_wrt_team > teamRover->at(rover_number).network_for_agent.at(second_domination).global_reward_wrt_team) {
+                        teamRover->at(rover_number).network_for_agent.at(check_indi_domination).my_domination.push_back(second_domination);
+                    }else{
+                        teamRover->at(rover_number).network_for_agent.at(check_indi_domination).number_dominated_me++;
+                    }
+                }
+            }
+            
+            if (teamRover->at(rover_number).network_for_agent.at(check_indi_domination).number_dominated_me == 0) {
+                teamRover->at(rover_number).network_for_agent.at(check_indi_domination).my_rank = 1;
+                //                cout<<"One Dominated"<<endl;
+            }
+        }
+    }
+    
+    //assigning rank to the networks
+    for (int rover_number =0 ; rover_number<teamRover->size(); rover_number++) {
+        for (int ind_1 = 0; ind_1 < teamRover->at(rover_number).network_for_agent.size(); ind_1++) {
+            if (teamRover->at(rover_number).network_for_agent.at(ind_1).my_rank != 1 ) {
+                teamRover->at(rover_number).network_for_agent.at(ind_1).my_rank = teamRover->at(rover_number).network_for_agent.size() - teamRover->at(rover_number).network_for_agent.at(ind_1).my_domination.size();
+            }
+        }
+    }
+    
+    if (verbose) {
+        for (int temp = 0; temp<teamRover->at(0).network_for_agent.size(); temp++) {
+            cout<<teamRover->at(0).network_for_agent.at(temp).my_rank<<endl;
+        }
+    }
+}
+
+
+void crowding_distace(vector<Rover>* p_rover){
+    
+}
+
 /***************************
  Main
  **************************/
@@ -910,15 +1708,17 @@ int main(int argc, const char * argv[]) {
     bool VERBOSE = true;
     srand((unsigned)time(NULL));
     if (test_simulation) {
-        
+        test_all_sensors();
+        cout<<"All Test"<<endl;
     }
     if (run_simulation) {
         if(VERBOSE)
             cout<<"Neural network"<<endl;
         
         //First set up environment
-        int number_of_rovers = 2;
-        int number_of_poi = 4;
+        int number_of_rovers = 1;
+        int number_of_poi = 100;
+        
         
         //object for environment
         Environment world;
@@ -927,24 +1727,41 @@ int main(int argc, const char * argv[]) {
         //Set values of poi's
         POI individualPOI;
         POI* p_poi = &individualPOI;
-        //randomly create x,y positions of rover
-        individualPOI.x_position_poi_vec.push_back(50.0);
-        individualPOI.y_position_poi_vec.push_back(100.0);
-        individualPOI.x_position_poi_vec.push_back(100.0);
-        individualPOI.y_position_poi_vec.push_back(150.0);
-        individualPOI.x_position_poi_vec.push_back(50.0);
-        individualPOI.y_position_poi_vec.push_back(150.0);
-        individualPOI.x_position_poi_vec.push_back(25.0);
-        individualPOI.y_position_poi_vec.push_back(50.0);
-        individualPOI.value_poi_vec.push_back(100.0);
-        individualPOI.value_poi_vec.push_back(100.0);
-        individualPOI.value_poi_vec.push_back(100.0);
-        individualPOI.value_poi_vec.push_back(100.0);
         
-        double total_value_poi = 0.0;
-        for (int t = 0 ; t<individualPOI.value_poi_vec.size(); t++) {
-            total_value_poi += individualPOI.value_poi_vec.at(t);
+        
+        //randomly create x,y positions of rover
+        /*
+         individualPOI.x_position_poi_vec.push_back(50.0);
+         individualPOI.y_position_poi_vec.push_back(100.0);
+         individualPOI.x_position_poi_vec.push_back(100.0);
+         individualPOI.y_position_poi_vec.push_back(150.0);
+         individualPOI.x_position_poi_vec.push_back(50.0);
+         individualPOI.y_position_poi_vec.push_back(150.0);
+         individualPOI.x_position_poi_vec.push_back(25.0);
+         individualPOI.y_position_poi_vec.push_back(50.0);
+         individualPOI.value_poi_vec.push_back(100.0);
+         individualPOI.value_poi_vec.push_back(100.0);
+         individualPOI.value_poi_vec.push_back(100.0);
+         individualPOI.value_poi_vec.push_back(100.0);
+         */
+        //Create 100 poi's 50 with each group
+        for (int temp_poi = 0 ; temp_poi< 100; temp_poi++) {
+            double temp_x = rand()%1000;
+            double temp_y = rand()%1000;
+            double value = rand()%100;
+            individualPOI.x_position_poi_vec.push_back(temp_x);
+            individualPOI.y_position_poi_vec.push_back(temp_y);
+            individualPOI.value_poi_vec.push_back(value);
+            
+            if (temp_poi<50) {
+                p_world->group_1.push_back(individualPOI);
+            }else{
+                p_world->group_2.push_back(individualPOI);
+            }
+            
         }
+        
+        assert(p_world->group_1.size() == p_world->group_2.size());
         
         //vectors of rovers
         vector<Rover> teamRover;
@@ -988,13 +1805,17 @@ int main(int argc, const char * argv[]) {
                 teamRover.at(rover_number).network_for_agent.at(neural_network).my_rover_number = rover_number;
             }
         }
+        
+        //Generations
         for(int generation =0 ; generation < 10 ;generation++){
+            
             for (int rover_number =0; rover_number<teamRover.size(); rover_number++) {
                 teamRover.at(rover_number).random_numbers.clear();
                 for (int neural_network = 0; neural_network < teamRover.at(rover_number).network_for_agent.size(); neural_network++) {
                     teamRover.at(rover_number).network_for_agent.at(neural_network).closest_dist_to_poi.clear();
                 }
             }
+            
             //Find scaling number
             double scaling_number = find_scaling_number();
             
@@ -1024,23 +1845,33 @@ int main(int argc, const char * argv[]) {
                 simulation(team_number, p_rover, p_poi, scaling_number);
             }
             
-            select_hall_of_fame(p_rover,p_poi);
+            //print fitness to output file
             
             
-            if (VERBOSE) {
-                FILE* p_output_development;
-                p_output_development = fopen("development.txt", "a");
-                for (int rover_number = 0; rover_number<number_of_rovers; rover_number++) {
-                    fprintf(p_output_development, "%d \n",rover_number);
-                    for (int neural_network = 0; neural_network < numNN; neural_network++) {
-                        fprintf(p_output_development, "%d \t %d \t %f \t %f \t %f \t %d \n",neural_network,teamRover.at(rover_number).network_for_agent.at(neural_network).my_team_number, teamRover.at(rover_number).network_for_agent.at(neural_network).local_reward_wrt_team,teamRover.at(rover_number).network_for_agent.at(neural_network).global_reward_wrt_team,teamRover.at(rover_number).network_for_agent.at(neural_network).difference_reward_wrt_team,teamRover.at(rover_number).network_for_agent.at(neural_network).hall_of_fame );
-                    }
+            //            select_hall_of_fame(p_rover,p_poi);
+            
+            FILE* p_output_development;
+            p_output_development = fopen("data", "a");
+            for (int rover_number = 0; rover_number<number_of_rovers; rover_number++) {
+                for (int neural_network = 0; neural_network < numNN; neural_network++) {
+                    fprintf(p_output_development, "%f \t",teamRover.at(rover_number).network_for_agent.at(neural_network).global_reward_wrt_team);
                 }
-                fclose(p_output_development);
             }
+            fclose(p_output_development);
             
+            //sets for EA
             survival_of_fittest(p_rover, numNN);
             repopulate(p_rover, numNN);
+            
+            // Code for NSGA II
+            
+            //            //Domination fill up
+            //            domination(p_rover);
+            //
+            //            //crowding distance
+            //            crowding_distace(p_rover);
+            
+            
         }
         cout<<"Check"<<endl;
         
