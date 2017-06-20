@@ -1637,63 +1637,6 @@ void test_all_sensors(){
     
 }
 
-/********************************************************************
- NSGA II Function
- 1. Domination - Fills all domination for each network and finds its rank if its zero
- 2. Crowding Distance - Finds the crowding distance
- *******************************************************************/
-
-void domination(vector<Rover>* teamRover){
-    bool verbose = true;
-    
-    if (verbose) {
-        for (int temp = 0; temp < teamRover->at(0).network_for_agent.size(); temp++) {
-            cout<<teamRover->at(0).network_for_agent.at(temp).global_reward_wrt_team<<endl;
-        }
-    }
-    
-    //First loop checks for itself
-    for (int rover_number =0; rover_number< teamRover->size(); rover_number++) {
-        for (int check_indi_domination = 0; check_indi_domination < teamRover->at(rover_number).network_for_agent.size(); check_indi_domination++) {
-            //assgin all number_dominate_me to 0
-            teamRover->at(rover_number).network_for_agent.at(check_indi_domination).number_dominated_me = 0;
-            //            cout<<teamRover->at(rover_number).network_for_agent.at(check_indi_domination).global_reward_wrt_team<<endl;
-            //second loop to check with other elements
-            for (int second_domination = 0; second_domination <teamRover->at(rover_number).network_for_agent.size(); second_domination++) {
-                if(check_indi_domination == second_domination){
-                    continue;
-                }else{
-                    if (teamRover->at(rover_number).network_for_agent.at(check_indi_domination).global_reward_wrt_team > teamRover->at(rover_number).network_for_agent.at(second_domination).global_reward_wrt_team) {
-                        teamRover->at(rover_number).network_for_agent.at(check_indi_domination).my_domination.push_back(second_domination);
-                    }else{
-                        teamRover->at(rover_number).network_for_agent.at(check_indi_domination).number_dominated_me++;
-                    }
-                }
-            }
-            
-            if (teamRover->at(rover_number).network_for_agent.at(check_indi_domination).number_dominated_me == 0) {
-                teamRover->at(rover_number).network_for_agent.at(check_indi_domination).my_rank = 1;
-                //                cout<<"One Dominated"<<endl;
-            }
-        }
-    }
-    
-    //assigning rank to the networks
-    for (int rover_number =0 ; rover_number<teamRover->size(); rover_number++) {
-        for (int ind_1 = 0; ind_1 < teamRover->at(rover_number).network_for_agent.size(); ind_1++) {
-            if (teamRover->at(rover_number).network_for_agent.at(ind_1).my_rank != 1 ) {
-                teamRover->at(rover_number).network_for_agent.at(ind_1).my_rank = teamRover->at(rover_number).network_for_agent.size() - teamRover->at(rover_number).network_for_agent.at(ind_1).my_domination.size();
-            }
-        }
-    }
-    
-    if (verbose) {
-        for (int temp = 0; temp<teamRover->at(0).network_for_agent.size(); temp++) {
-            cout<<teamRover->at(0).network_for_agent.at(temp).my_rank<<endl;
-        }
-    }
-}
-
 
 /***************************
  Main
