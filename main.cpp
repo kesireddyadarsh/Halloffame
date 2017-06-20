@@ -1859,13 +1859,7 @@ int main(int argc, const char * argv[]) {
             survival_of_fittest(p_rover, numNN);
             repopulate(p_rover, numNN);
             
-            // Code for NSGA II
             
-            //            //Domination fill up
-            //            domination(p_rover);
-            //
-            //            //crowding distance
-            //            crowding_distace(p_rover);
             
             
         }
