@@ -1735,13 +1735,31 @@ int main(int argc, const char * argv[]) {
             teamRover.at(rover_number).create_neural_network_population(numNN, topology);
         }
         
-        //Number neural networks
-        for (int rover_number =0; rover_number< number_of_rovers; rover_number++) {
-            for (int neural_network=0; neural_network < numNN; neural_network++) {
-                teamRover.at(rover_number).network_for_agent.at(neural_network).my_id_wrt_rover = neural_network;
-                teamRover.at(rover_number).network_for_agent.at(neural_network).my_rover_number = rover_number;
+        //set all team numbers to 9999999
+        for (int rover_number = 0; rover_number< teamRover.size(); rover_number++) {
+            for (int nn = 0; nn < teamRover.at(rover_number).network_for_agent.size(); nn++) {
+                p_rover->at(rover_number).network_for_agent.at(nn).my_team_number = 9999999;
             }
         }
+        
+        //Create teams
+        for (int team_number = 0; team_number < numNN; team_number++) {
+            int rand_1 = rand()%numNN;
+            int rand_2 = rand()%numNN;
+            while ((rand_1 == rand_2) || (p_rover->at(0).network_for_agent.at(rand_1).my_team_number !=  9999999) || (p_rover->at(1).network_for_agent.at(rand_2).my_team_number !=  9999999)) {
+                rand_2 = rand()%numNN;
+            }
+            p_rover->at(0).network_for_agent.at(rand_1).my_team_number = team_number;
+            p_rover->at(1).network_for_agent.at(rand_2).my_team_number = team_number;
+        }
+        
+        for (int rover_number = 0; rover_number < teamRover.size(); rover_number++) {
+            for (int nn = 0; nn < teamRover.at(rover_number).network_for_agent.size(); nn++) {
+                cout<< teamRover.at(rover_number).network_for_agent.at(nn).my_team_number <<endl;
+            }
+        }
+        
+        exit(100);
         
         //Generations
         for(int generation =0 ; generation < 10 ;generation++){
