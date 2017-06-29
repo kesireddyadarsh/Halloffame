@@ -1622,7 +1622,6 @@ void test_circle_path(double x_start,double y_start){
 }
 
 void test_all_sensors(){
-    
     POI_sensor_test();
     rover_sensor_test();
     custom_test();
@@ -1634,7 +1633,6 @@ void test_all_sensors(){
     test_path(x_start,y_start);
     x_start = 0.0, y_start = 0.0;
     test_circle_path(x_start,y_start);
-    
 }
 
 
@@ -1655,9 +1653,8 @@ int main(int argc, const char * argv[]) {
             cout<<"Neural network"<<endl;
         
         //First set up environment
-        int number_of_rovers = 1;
+        int number_of_rovers = 2;
         int number_of_poi = 100;
-        
         
         //object for environment
         Environment world;
@@ -1667,8 +1664,7 @@ int main(int argc, const char * argv[]) {
         POI individualPOI;
         POI* p_poi = &individualPOI;
         
-        
-        //randomly create x,y positions of rover
+        //Create POI
         /*
          individualPOI.x_position_poi_vec.push_back(50.0);
          individualPOI.y_position_poi_vec.push_back(100.0);
@@ -1683,24 +1679,26 @@ int main(int argc, const char * argv[]) {
          individualPOI.value_poi_vec.push_back(100.0);
          individualPOI.value_poi_vec.push_back(100.0);
          */
-        //Create 100 poi's 50 with each group
+        
+        //Create 100 poi's 50 at random locations with each group
         for (int temp_poi = 0 ; temp_poi< 100; temp_poi++) {
-            double temp_x = rand()%1000;
-            double temp_y = rand()%1000;
-            double value = rand()%100;
+            int temp_x = rand()%1000;
+            int temp_y = rand()%1000;
             individualPOI.x_position_poi_vec.push_back(temp_x);
             individualPOI.y_position_poi_vec.push_back(temp_y);
-            individualPOI.value_poi_vec.push_back(value);
             
             if (temp_poi<50) {
                 p_world->group_1.push_back(individualPOI);
+                individualPOI.value_poi_vec.push_back(100);
+                
             }else{
                 p_world->group_2.push_back(individualPOI);
+                individualPOI.value_poi_vec.push_back(50);
             }
-            
         }
         
         assert(p_world->group_1.size() == p_world->group_2.size());
+        
         
         //vectors of rovers
         vector<Rover> teamRover;
