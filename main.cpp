@@ -1746,8 +1746,10 @@ int main(int argc, const char * argv[]) {
         for (int team_number = 0; team_number < numNN; team_number++) {
             int rand_1 = rand()%numNN;
             int rand_2 = rand()%numNN;
+            cout<< rand_1 << "\t" << rand_2 << endl;
             while ((rand_1 == rand_2) || (p_rover->at(0).network_for_agent.at(rand_1).my_team_number !=  9999999) || (p_rover->at(1).network_for_agent.at(rand_2).my_team_number !=  9999999)) {
                 rand_2 = rand()%numNN;
+                rand_1 = rand()%numNN;
             }
             p_rover->at(0).network_for_agent.at(rand_1).my_team_number = team_number;
             p_rover->at(1).network_for_agent.at(rand_2).my_team_number = team_number;
