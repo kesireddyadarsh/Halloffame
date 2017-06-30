@@ -1636,6 +1636,85 @@ void test_all_sensors(){
 }
 
 
+/*************************************************************************
+            Create Teams
+ ***********************************************************************/
+
+void create_teams(vector<Rover>* p_rover, int numNN){
+    //Create teams
+    for (int team_number = 0; team_number < numNN; team_number++) {
+        vector<int> temp_number_holder;
+        for (int rover_number = 0; rover_number < p_rover->size(); rover_number++) {
+            int temp = rand()%numNN;
+            for (int size_number = 0; size_number < temp_number_holder.size(); size_number++) {
+                
+                if (temp_number_holder.at(size_number) == temp) {
+                    temp = rand()%numNN;
+                    size_number = -1;
+                }
+                
+                while (p_rover->at(rover_number).network_for_agent.at(temp).my_team_number != 9999999) {
+                    temp = rand()%numNN;
+                }
+            }
+            while (p_rover->at(rover_number).network_for_agent.at(temp).my_team_number != 9999999) {
+                temp = rand()%numNN;
+            }
+            temp_number_holder.push_back(temp);
+        }
+        
+        for (int temp = 0; temp<temp_number_holder.size(); temp++) {
+            cout<< temp_number_holder.at(temp)<<"\t";
+        }
+        cout<<endl;
+        assert(temp_number_holder.size() == p_rover->size());
+        
+        for (int rover_number = 0 ; rover_number < p_rover->size(); rover_number++) {
+            p_rover->at(rover_number).network_for_agent.at(temp_number_holder.at(rover_number)).my_team_number = temp_number_holder.at(rover_number);
+        }
+        
+        //            int rand_1 = rand()%numNN;
+        //            int rand_2 = rand()%numNN;
+        //            cout<< rand_1 << "\t" << rand_2 << endl;
+        //            while ((p_rover->at(0).network_for_agent.at(rand_1).my_team_number !=  9999999) || (p_rover->at(1).network_for_agent.at(rand_2).my_team_number !=  9999999)) {
+        //                rand_2 = rand()%numNN;
+        //                rand_1 = rand()%numNN;
+        //            }
+        //            p_rover->at(0).network_for_agent.at(rand_1).my_team_number = team_number;
+        //            p_rover->at(1).network_for_agent.at(rand_2).my_team_number = team_number;
+        
+        
+    }
+    
+    for (int rover_number = 0; rover_number < p_rover->size(); rover_number++) {
+        for (int nn = 0; nn < p_rover->at(rover_number).network_for_agent.size(); nn++) {
+            cout<<p_rover->at(rover_number).network_for_agent.at(nn).my_team_number <<endl;
+        }
+    }
+    
+    //make sure policy of same rover doesn't have same team number
+    for (int rover_number = 0 ; rover_number < p_rover->size(); rover_number++) {
+        for (int nn = 0; nn<p_rover->at(rover_number).network_for_agent.size(); nn++) {
+            for (int nn_1 = 0; nn_1 < p_rover->at(rover_number).network_for_agent.size(); nn_1++) {
+                if (nn != nn_1) {
+                    assert(p_rover->at(rover_number).network_for_agent.at(nn).my_team_number != 9999999);
+                    assert(p_rover->at(rover_number).network_for_agent.at(nn).my_team_number != p_rover->at(rover_number).network_for_agent.at(nn_1).my_team_number);
+                }
+            }
+        }
+    }
+}
+
+void set_teams_to_inital(vector<Rover>* p_rover, int numNN){
+    //set all team numbers to 9999999
+    for (int rover_number = 0; rover_number< p_rover->size(); rover_number++) {
+        for (int nn = 0; nn < p_rover->at(rover_number).network_for_agent.size(); nn++) {
+            p_rover->at(rover_number).network_for_agent.at(nn).my_team_number = 9999999;
+        }
+    }
+}
+
+
 /***************************
  Main
  **************************/
@@ -1735,36 +1814,12 @@ int main(int argc, const char * argv[]) {
             teamRover.at(rover_number).create_neural_network_population(numNN, topology);
         }
         
-        //set all team numbers to 9999999
-        for (int rover_number = 0; rover_number< teamRover.size(); rover_number++) {
-            for (int nn = 0; nn < teamRover.at(rover_number).network_for_agent.size(); nn++) {
-                p_rover->at(rover_number).network_for_agent.at(nn).my_team_number = 9999999;
-            }
-        }
-        
-        //Create teams
-        for (int team_number = 0; team_number < numNN; team_number++) {
-            int rand_1 = rand()%numNN;
-            int rand_2 = rand()%numNN;
-            cout<< rand_1 << "\t" << rand_2 << endl;
-            while ((rand_1 == rand_2) || (p_rover->at(0).network_for_agent.at(rand_1).my_team_number !=  9999999) || (p_rover->at(1).network_for_agent.at(rand_2).my_team_number !=  9999999)) {
-                rand_2 = rand()%numNN;
-                rand_1 = rand()%numNN;
-            }
-            p_rover->at(0).network_for_agent.at(rand_1).my_team_number = team_number;
-            p_rover->at(1).network_for_agent.at(rand_2).my_team_number = team_number;
-        }
-        
-        for (int rover_number = 0; rover_number < teamRover.size(); rover_number++) {
-            for (int nn = 0; nn < teamRover.at(rover_number).network_for_agent.size(); nn++) {
-                cout<< teamRover.at(rover_number).network_for_agent.at(nn).my_team_number <<endl;
-            }
-        }
-        
-        exit(100);
-        
         //Generations
         for(int generation =0 ; generation < 10 ;generation++){
+            
+            //First Create teams
+            set_teams_to_inital(p_rover, numNN);
+            create_teams(p_rover, numNN);
             
             for (int rover_number =0; rover_number<teamRover.size(); rover_number++) {
                 teamRover.at(rover_number).random_numbers.clear();
