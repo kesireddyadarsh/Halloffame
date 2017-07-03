@@ -587,58 +587,6 @@ void repopulate_neural_networks(int numNN,Population* p_Pop){
     }
 }
 
-/**************************************************
- Below function make sure policies are not same per simulation
- 1. generate_random_numbers : generates random numbers until numNN, make sures rovers doesn't have repeated policy numbers (checks columns).
- 2. check_policies : checks in each simulation  if two rovers have same policies (checks rows)
- 3. generate_random_numbers_policies : if same policies numbers comes in difference rover, this function will change entire random_number for second rover policy
- ************************************************/
-
-void generate_random_numbers(vector<Rover>* teamRover,int number_of_neural_networks){
-    //create random numbers
-    for (int rover_number = 0; rover_number < teamRover->size(); rover_number++) {
-        for (int neural_network = 0; neural_network < number_of_neural_networks ; neural_network++) {
-            int random_number = rand()%number_of_neural_networks;
-            for (int temp_network =0 ; temp_network < teamRover->at(rover_number).random_numbers.size(); temp_network++) {
-                if (random_number == teamRover->at(rover_number).random_numbers.at(temp_network)) {
-                    random_number = rand()%number_of_neural_networks;
-                    temp_network = -1;
-                }
-            }
-            teamRover->at(rover_number).random_numbers.push_back(random_number);
-        }
-    }
-}
-
-int check_policies(vector<Rover>* teamRover,int number_of_neural_networks){
-    for (int neural_network = 0; neural_network<number_of_neural_networks; neural_network++) {
-        for (int rover_number =0 ; rover_number < teamRover->size(); rover_number++) {
-            for (int other_rover =0 ; other_rover < teamRover->size(); other_rover++) {
-                if (other_rover == rover_number) {
-                    continue;
-                }
-                if (teamRover->at(other_rover).random_numbers.at(neural_network) == teamRover->at(rover_number).random_numbers.at(neural_network)) {
-                    return other_rover;
-                }
-            }
-        }
-    }
-    return 1234567;
-}
-
-void generate_random_numbers_policies(vector<Rover>* teamRover, int number_of_neural_networks,int policy_number){
-    teamRover->at(policy_number).random_numbers.clear();
-    for (int neural_network = 0; neural_network < number_of_neural_networks; neural_network++) {
-        int random_number = rand()%number_of_neural_networks;
-        for (int temp = 0; temp < teamRover->at(policy_number).random_numbers.size() ; temp++) {
-            if (random_number == teamRover->at(policy_number).random_numbers.at(temp)) {
-                random_number = rand()%number_of_neural_networks;
-                temp = -1;
-            }
-        }
-        teamRover->at(policy_number).random_numbers.push_back(random_number);
-    }
-}
 
 /****************************************************************************
  Same old EA
@@ -686,19 +634,6 @@ void repopulate(vector<Rover>* teamRover,int number_of_neural_network){
     }
 }
 
-
-/********************************************************************************
- assigns_team_number: each policy is giving its team number
- ********************************************************************************/
-
-void assign_team_number(vector<Rover>* teamRover, int number_of_neural_networks){
-    for (int rover_number = 0; rover_number < teamRover->size(); rover_number++) {
-        for (int neural_network = 0; neural_network < number_of_neural_networks; neural_network++) {
-            int temp = teamRover->at(rover_number).random_numbers.at(neural_network);
-            teamRover->at(rover_number).network_for_agent.at(neural_network).my_team_number = temp;
-        }
-    }
-}
 
 /********************************************************************************
  simulation: Following things happen here and flow is same
@@ -885,6 +820,58 @@ void simulation( int team_number, vector<Rover>* teamRover, POI* individualPOI,d
     policy_numbers.clear();
     
 }
+
+
+void simulation_new_version( vector<Rover>* teamRover, POI* individualPOI,double scaling_number, int policy, int rover_number){
+    int local_policy = policy;
+    int local_rover_number = rover_number;
+    
+    //setting all rovers to inital state
+    for (int temp_rover_number =0 ; temp_rover_number<teamRover->size(); rover_number++) {
+        teamRover->at(temp_rover_number).x_position = teamRover->at(temp_rover_number).x_position_vec.at(0);
+        teamRover->at(temp_rover_number).y_position = teamRover->at(temp_rover_number).y_position_vec.at(0);
+        teamRover->at(temp_rover_number).theta = 0.0;
+    }
+
+    
+    for (int time_step = 0 ; time_step < 1000 ; time_step++) {
+        //reset_sense_new(rover_number, p_rover, p_poi); // reset and sense new values
+        teamRover->at(local_rover_number).reset_sensors(); // Reset all sensors
+        teamRover->at(local_rover_number).sense_all_values(individualPOI->x_position_poi_vec, individualPOI->y_position_poi_vec, individualPOI->value_poi_vec); // sense all values
+        
+        //Change of input values
+        for (int change_sensor_values = 0 ; change_sensor_values <teamRover->at(local_rover_number).sensors.size(); change_sensor_values++) {
+            teamRover->at(local_rover_number).sensors.at(change_sensor_values) /= scaling_number;
+        }
+        
+        teamRover->at(local_rover_number).network_for_agent.at(local_policy).feedForward(teamRover->at(local_rover_number).sensors); // scaled input into neural network
+        for (int change_sensor_values = 0 ; change_sensor_values <teamRover->at(local_rover_number).sensors.size(); change_sensor_values++) {
+            assert(!isnan(teamRover->at(rover_number).sensors.at(change_sensor_values)));
+        }
+        
+        double dx = teamRover->at(local_rover_number).network_for_agent.at(local_policy).outputvaluesNN.at(0);
+        double dy = teamRover->at(local_rover_number).network_for_agent.at(local_policy).outputvaluesNN.at(1);
+        teamRover->at(local_rover_number).network_for_agent.at(local_policy).outputvaluesNN.clear();
+        
+        assert(!isnan(dx));
+        assert(!isnan(dy));
+        teamRover->at(local_rover_number).move_rover(dx, dy);
+        
+        
+        for (int cal_dis =0; cal_dis<individualPOI->value_poi_vec.size(); cal_dis++) {
+            double x_distance_cal =((teamRover->at(local_rover_number).x_position) -(individualPOI->x_position_poi_vec.at(cal_dis)));
+            double y_distance_cal = ((teamRover->at(local_rover_number).y_position) -(individualPOI->y_position_poi_vec.at(cal_dis)));
+            double distance = sqrt((x_distance_cal*x_distance_cal)+(y_distance_cal*y_distance_cal));
+            if (teamRover->at(local_rover_number).network_for_agent.at(local_policy).closest_dist_to_poi.at(cal_dis) > distance) {
+                teamRover->at(local_rover_number).network_for_agent.at(local_policy).closest_dist_to_poi.at(cal_dis) = distance ;
+            }
+        }
+
+        
+    }
+    
+}
+
 
 void select_hall_of_fame(vector<Rover>* teamRover,POI* individualPOI){
     //Makes all hall of fame to false
@@ -1672,18 +1659,6 @@ void create_teams(vector<Rover>* p_rover, int numNN){
         for (int rover_number = 0 ; rover_number < p_rover->size(); rover_number++) {
             p_rover->at(rover_number).network_for_agent.at(temp_number_holder.at(rover_number)).my_team_number = temp_number_holder.at(rover_number);
         }
-        
-        //            int rand_1 = rand()%numNN;
-        //            int rand_2 = rand()%numNN;
-        //            cout<< rand_1 << "\t" << rand_2 << endl;
-        //            while ((p_rover->at(0).network_for_agent.at(rand_1).my_team_number !=  9999999) || (p_rover->at(1).network_for_agent.at(rand_2).my_team_number !=  9999999)) {
-        //                rand_2 = rand()%numNN;
-        //                rand_1 = rand()%numNN;
-        //            }
-        //            p_rover->at(0).network_for_agent.at(rand_1).my_team_number = team_number;
-        //            p_rover->at(1).network_for_agent.at(rand_2).my_team_number = team_number;
-        
-        
     }
     
     for (int rover_number = 0; rover_number < p_rover->size(); rover_number++) {
@@ -1803,7 +1778,7 @@ int main(int argc, const char * argv[]) {
         
         //Second set up neural networks
         //Create numNN of neural network with pointer
-        int numNN = 10;
+        int numNN = 8;
         vector<unsigned> topology;
         topology.clear();
         topology.push_back(8);
@@ -1814,6 +1789,12 @@ int main(int argc, const char * argv[]) {
             teamRover.at(rover_number).create_neural_network_population(numNN, topology);
         }
         
+        //First Create teams
+//        set_teams_to_inital(p_rover, numNN);
+//        create_teams(p_rover, numNN);
+        
+//        exit(100);
+        
         //Generations
         for(int generation =0 ; generation < 10 ;generation++){
             
@@ -1822,7 +1803,7 @@ int main(int argc, const char * argv[]) {
             create_teams(p_rover, numNN);
             
             for (int rover_number =0; rover_number<teamRover.size(); rover_number++) {
-                teamRover.at(rover_number).random_numbers.clear();
+                teamRover.at(rover_number).random_numbers.clear();      //This is not useful
                 for (int neural_network = 0; neural_network < teamRover.at(rover_number).network_for_agent.size(); neural_network++) {
                     teamRover.at(rover_number).network_for_agent.at(neural_network).closest_dist_to_poi.clear();
                 }
@@ -1841,41 +1822,45 @@ int main(int argc, const char * argv[]) {
             }
             
             //Select random Neural Networks for each agent
-            generate_random_numbers(p_rover,numNN);
-            int temp_check_policies = 0;
-            while (temp_check_policies != 1234567) {
-                temp_check_policies = check_policies(p_rover, numNN);
-                if (temp_check_policies != 1234567) {
-                    generate_random_numbers_policies(p_rover,numNN,temp_check_policies);
-                }
-            }
+//            generate_random_numbers(p_rover,numNN);
+//            int temp_check_policies = 0;
+//            while (temp_check_policies != 1234567) {
+//                temp_check_policies = check_policies(p_rover, numNN);
+//                if (temp_check_policies != 1234567) {
+//                    generate_random_numbers_policies(p_rover,numNN,temp_check_policies);
+//                }
+//            }
             
             //team numbers will be assigned to each agent. Teams are developed on generate_random_numbers function
-            assign_team_number(p_rover,numNN);
+//            assign_team_number(p_rover,numNN);
             
-            for (int team_number = 0; team_number<numNN; team_number++) {
-                simulation(team_number, p_rover, p_poi, scaling_number);
-            }
+//            for (int team_number = 0; team_number<numNN; team_number++) {
+//                simulation(team_number, p_rover, p_poi, scaling_number);
+//            }
+//            
+//            //print fitness to output file
+//            
+//            
+//            //            select_hall_of_fame(p_rover,p_poi);
+//            
+//            FILE* p_output_development;
+//            p_output_development = fopen("data", "a");
+//            for (int rover_number = 0; rover_number<number_of_rovers; rover_number++) {
+//                for (int neural_network = 0; neural_network < numNN; neural_network++) {
+//                    fprintf(p_output_development, "%f \t",teamRover.at(rover_number).network_for_agent.at(neural_network).global_reward_wrt_team);
+//                }
+//            }
+//            fclose(p_output_development);
+//            
+//            //sets for EA
+//            survival_of_fittest(p_rover, numNN);
+//            repopulate(p_rover, numNN);
             
-            //print fitness to output file
-            
-            
-            //            select_hall_of_fame(p_rover,p_poi);
-            
-            FILE* p_output_development;
-            p_output_development = fopen("data", "a");
-            for (int rover_number = 0; rover_number<number_of_rovers; rover_number++) {
-                for (int neural_network = 0; neural_network < numNN; neural_network++) {
-                    fprintf(p_output_development, "%f \t",teamRover.at(rover_number).network_for_agent.at(neural_network).global_reward_wrt_team);
+            for (int rover_number = 0 ; rover_number < p_rover->size(); p_rover++) {
+                for (int policy = 0 ; policy < p_rover->at(rover_number).network_for_agent.size(); policy++) {
+                    simulation_new_version(p_rover, p_poi, scaling_number, policy, rover_number);
                 }
             }
-            fclose(p_output_development);
-            
-            //sets for EA
-            survival_of_fittest(p_rover, numNN);
-            repopulate(p_rover, numNN);
-            
-            
             
             
         }
