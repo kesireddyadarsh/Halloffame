@@ -823,18 +823,32 @@ void simulation( int team_number, vector<Rover>* teamRover, POI* individualPOI,d
 
 
 void simulation_new_version( vector<Rover>* teamRover, POI* individualPOI,double scaling_number, int policy, int rover_number){
+    bool full_verbose  = false;
+    bool verbose = false;
     int local_policy = policy;
     int local_rover_number = rover_number;
     
+    if (full_verbose) {
+        cout<<"Locations of POI"<<endl;
+        for (int temp_number = 0; temp_number < individualPOI->x_position_poi_vec.size(); temp_number++) {
+            cout<<individualPOI->x_position_poi_vec.at(temp_number)<<"\t"<<individualPOI->y_position_poi_vec.at(temp_number)<<endl;
+        }
+    }
+    
     //setting all rovers to inital state
-    for (int temp_rover_number =0 ; temp_rover_number<teamRover->size(); rover_number++) {
+    for (int temp_rover_number =0 ; temp_rover_number<teamRover->size(); temp_rover_number++) {
         teamRover->at(temp_rover_number).x_position = teamRover->at(temp_rover_number).x_position_vec.at(0);
         teamRover->at(temp_rover_number).y_position = teamRover->at(temp_rover_number).y_position_vec.at(0);
         teamRover->at(temp_rover_number).theta = 0.0;
     }
 
     
-    for (int time_step = 0 ; time_step < 1000 ; time_step++) {
+    for (int time_step = 0 ; time_step < 10 ; time_step++) {
+        if (verbose || full_verbose) {
+            cout<<"Print X and Y location"<<endl;
+            cout<<teamRover->at(local_rover_number).x_position<<"\t"<<teamRover->at(local_rover_number).y_position<<endl;
+        }
+        
         //reset_sense_new(rover_number, p_rover, p_poi); // reset and sense new values
         teamRover->at(local_rover_number).reset_sensors(); // Reset all sensors
         teamRover->at(local_rover_number).sense_all_values(individualPOI->x_position_poi_vec, individualPOI->y_position_poi_vec, individualPOI->value_poi_vec); // sense all values
@@ -866,7 +880,105 @@ void simulation_new_version( vector<Rover>* teamRover, POI* individualPOI,double
                 teamRover->at(local_rover_number).network_for_agent.at(local_policy).closest_dist_to_poi.at(cal_dis) = distance ;
             }
         }
+        
+        if (full_verbose) {
+            cout<<"Print out Distances:: "<<endl;
+            for (int temp_cal_distance = 0 ; temp_cal_distance < teamRover->at(local_rover_number).network_for_agent.at(local_policy).closest_dist_to_poi.size(); temp_cal_distance++) {
+                cout<< teamRover->at(local_rover_number).network_for_agent.at(local_policy).closest_dist_to_poi.at(temp_cal_distance)<<endl;
+            }
+        }
+    }
+    
+}
 
+void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN){
+    
+    //Local reward
+    for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+        for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
+            
+            //make sure each POI has corresponding value assosicated to it
+            assert(individualPOI->value_poi_vec.size() == teamRover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.size());
+            
+            //Actual Local Reward
+            double temp_local_reward = 0;
+            for (int closest_distance_number = 0; closest_distance_number<teamRover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.size(); closest_distance_number++) {
+                temp_local_reward += ((individualPOI->value_poi_vec.at(closest_distance_number))/(teamRover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.at(closest_distance_number)));
+            }
+            teamRover->at(rover_number).network_for_agent.at(policy).local_reward_wrt_team = temp_local_reward;
+        }
+    }
+    
+    //Global reward
+    //Find closest distance reached by team to POI
+    for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+        for (int policy_number = 0 ; policy_number < teamRover->at(rover_number).network_for_agent.size(); policy_number++) {
+            teamRover->at(rover_number).network_for_agent.at(policy_number).global_reward_wrt_team = -1;
+        }
+    }
+    for (int team_number = 0 ; team_number < numNN; team_number++) {
+        vector<double> save_temp_closest_distance;
+        for (int poi_number = 0 ; poi_number < individualPOI->value_poi_vec.size(); poi_number++) {
+            double temp_closest_distance = 999999999.99999;
+            for (int rover_number = 0 ; rover_number  < teamRover->size(); rover_number++) {
+                
+                for (int policy_number = 0 ; poi_number < teamRover->at(rover_number).network_for_agent.size(); poi_number++) {
+                    
+                    if (teamRover->at(rover_number).network_for_agent.at(policy_number).my_team_number == team_number) {
+                        if (temp_closest_distance < teamRover->at(rover_number).network_for_agent.at(policy_number).closest_dist_to_poi.at(poi_number)) {
+                            temp_closest_distance = teamRover->at(rover_number).network_for_agent.at(policy_number).closest_dist_to_poi.at(poi_number);
+                        }
+                    }
+                    
+                }
+                
+            }
+            save_temp_closest_distance.push_back(temp_closest_distance);
+        }
+        
+        assert(save_temp_closest_distance.size() == individualPOI->value_poi_vec.size());
+        
+        double temp_global = 0.0;
+        for (int each_val = 0; each_val < save_temp_closest_distance.size(); each_val++) {
+            temp_global += (save_temp_closest_distance.at(each_val)/individualPOI->value_poi_vec.at(each_val));
+        }
+        for (int rover_number = 0; rover_number < teamRover->size(); rover_number++) {
+            for (int temp_policy_number = 0 ; temp_policy_number < teamRover->at(rover_number).network_for_agent.size(); temp_policy_number++) {
+                if (teamRover->at(rover_number).network_for_agent.at(temp_policy_number).my_team_number == team_number) {
+                    teamRover->at(rover_number).network_for_agent.at(temp_policy_number).global_reward_wrt_team = temp_global;
+                }
+            }
+        }
+    }
+    
+    for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+        for (int policy_number = 0 ; policy_number < teamRover->at(rover_number).network_for_agent.size(); policy_number++) {
+            assert(teamRover->at(rover_number).network_for_agent.at(policy_number).global_reward_wrt_team != -1);
+        }
+    }
+    
+    
+    //Calculate difference reward
+    //First find closest distance
+    for (int team_number = 0 ; team_number < numNN; team_number++) {
+        
+        for (int poi_number = 0 ; poi_number <individualPOI->value_poi_vec.size(); poi_number++) {
+            
+            for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+                
+                for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
+                    
+                    for (int policy_exception = 0 ; policy_exception < teamRover->at(rover_number).network_for_agent.size(); policy_exception++) {
+                        
+                        if (policy != policy_exception) {
+                            if (teamRover->at(rover_number).network_for_agent.at(policy_exception).my_team_number == team_number) {
+                                
+                            }
+                        }
+                    }
+                }
+            }
+        }
         
     }
     
@@ -1628,6 +1740,8 @@ void test_all_sensors(){
  ***********************************************************************/
 
 void create_teams(vector<Rover>* p_rover, int numNN){
+    bool verbose = false;
+    
     //Create teams
     for (int team_number = 0; team_number < numNN; team_number++) {
         vector<int> temp_number_holder;
@@ -1649,11 +1763,13 @@ void create_teams(vector<Rover>* p_rover, int numNN){
             }
             temp_number_holder.push_back(temp);
         }
-        
-        for (int temp = 0; temp<temp_number_holder.size(); temp++) {
-            cout<< temp_number_holder.at(temp)<<"\t";
+        if (verbose) {
+            for (int temp = 0; temp<temp_number_holder.size(); temp++) {
+                cout<< temp_number_holder.at(temp)<<"\t";
+            }
+            cout<<endl;
         }
-        cout<<endl;
+        
         assert(temp_number_holder.size() == p_rover->size());
         
         for (int rover_number = 0 ; rover_number < p_rover->size(); rover_number++) {
@@ -1661,9 +1777,11 @@ void create_teams(vector<Rover>* p_rover, int numNN){
         }
     }
     
-    for (int rover_number = 0; rover_number < p_rover->size(); rover_number++) {
-        for (int nn = 0; nn < p_rover->at(rover_number).network_for_agent.size(); nn++) {
-            cout<<p_rover->at(rover_number).network_for_agent.at(nn).my_team_number <<endl;
+    if (verbose) {
+        for (int rover_number = 0; rover_number < p_rover->size(); rover_number++) {
+            for (int nn = 0; nn < p_rover->at(rover_number).network_for_agent.size(); nn++) {
+                cout<<p_rover->at(rover_number).network_for_agent.at(nn).my_team_number <<endl;
+            }
         }
     }
     
@@ -1697,6 +1815,7 @@ void set_teams_to_inital(vector<Rover>* p_rover, int numNN){
 int main(int argc, const char * argv[]) {
     cout << "Hello, World!\n"<<endl;
     bool VERBOSE = true;
+    bool full_verbose = false;
     srand((unsigned)time(NULL));
     if (test_simulation) {
         test_all_sensors();
@@ -1708,7 +1827,7 @@ int main(int argc, const char * argv[]) {
         
         //First set up environment
         int number_of_rovers = 2;
-        int number_of_poi = 100;
+        int number_of_poi = 10;
         
         //object for environment
         Environment world;
@@ -1735,13 +1854,13 @@ int main(int argc, const char * argv[]) {
          */
         
         //Create 100 poi's 50 at random locations with each group
-        for (int temp_poi = 0 ; temp_poi< 100; temp_poi++) {
+        for (int temp_poi = 0 ; temp_poi< 10; temp_poi++) {
             int temp_x = rand()%1000;
             int temp_y = rand()%1000;
             individualPOI.x_position_poi_vec.push_back(temp_x);
             individualPOI.y_position_poi_vec.push_back(temp_y);
             
-            if (temp_poi<50) {
+            if (temp_poi<5) {
                 p_world->group_1.push_back(individualPOI);
                 individualPOI.value_poi_vec.push_back(100);
                 
@@ -1756,11 +1875,12 @@ int main(int argc, const char * argv[]) {
         
         //vectors of rovers
         vector<Rover> teamRover;
+        vector<Rover>* p_rover = &teamRover;
         Rover a;
         for (int i=0; i<number_of_rovers; i++) {
             teamRover.push_back(a);
         }
-        vector<Rover>* p_rover = &teamRover;
+        
         for (int i=0 ; i<number_of_rovers; i++) {
             teamRover.at(i).x_position_vec.push_back(0+(0.5*i));
             teamRover.at(i).y_position_vec.push_back(0);
@@ -1778,7 +1898,7 @@ int main(int argc, const char * argv[]) {
         
         //Second set up neural networks
         //Create numNN of neural network with pointer
-        int numNN = 8;
+        int numNN = 2;
         vector<unsigned> topology;
         topology.clear();
         topology.push_back(8);
@@ -1796,7 +1916,7 @@ int main(int argc, const char * argv[]) {
 //        exit(100);
         
         //Generations
-        for(int generation =0 ; generation < 10 ;generation++){
+        for(int generation =0 ; generation < 2 ;generation++){
             
             //First Create teams
             set_teams_to_inital(p_rover, numNN);
@@ -1821,51 +1941,28 @@ int main(int argc, const char * argv[]) {
                 }
             }
             
-            //Select random Neural Networks for each agent
-//            generate_random_numbers(p_rover,numNN);
-//            int temp_check_policies = 0;
-//            while (temp_check_policies != 1234567) {
-//                temp_check_policies = check_policies(p_rover, numNN);
-//                if (temp_check_policies != 1234567) {
-//                    generate_random_numbers_policies(p_rover,numNN,temp_check_policies);
-//                }
-//            }
-            
-            //team numbers will be assigned to each agent. Teams are developed on generate_random_numbers function
-//            assign_team_number(p_rover,numNN);
-            
-//            for (int team_number = 0; team_number<numNN; team_number++) {
-//                simulation(team_number, p_rover, p_poi, scaling_number);
-//            }
-//            
-//            //print fitness to output file
-//            
-//            
-//            //            select_hall_of_fame(p_rover,p_poi);
-//            
-//            FILE* p_output_development;
-//            p_output_development = fopen("data", "a");
-//            for (int rover_number = 0; rover_number<number_of_rovers; rover_number++) {
-//                for (int neural_network = 0; neural_network < numNN; neural_network++) {
-//                    fprintf(p_output_development, "%f \t",teamRover.at(rover_number).network_for_agent.at(neural_network).global_reward_wrt_team);
-//                }
-//            }
-//            fclose(p_output_development);
-//            
-//            //sets for EA
-//            survival_of_fittest(p_rover, numNN);
-//            repopulate(p_rover, numNN);
-            
-            for (int rover_number = 0 ; rover_number < p_rover->size(); p_rover++) {
-                for (int policy = 0 ; policy < p_rover->at(rover_number).network_for_agent.size(); policy++) {
+            for (int rover_number = 0 ; rover_number < p_rover->size(); rover_number++) {
+                for (int policy = 0 ; policy < teamRover.at(rover_number).network_for_agent.size(); policy++) {
                     simulation_new_version(p_rover, p_poi, scaling_number, policy, rover_number);
                 }
             }
             
+            if (full_verbose) {
+                for (int rover_number = 0 ; rover_number < p_rover->size(); rover_number++) {
+                    for(int policy = 0 ; policy < p_rover->at(rover_number).network_for_agent.size();policy++){
+                        for (int distance = 0 ; distance < p_rover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.size(); distance++) {
+                            cout<<p_rover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.at(distance)<<"\t";
+                        }
+                        cout<<endl;
+                    }
+                    cout<<endl;
+                }
+            }
+            
+            calculate_rewards(p_rover,p_poi,numNN);
+            
             
         }
-        cout<<"Check"<<endl;
-        
     }
     
     return 0;
