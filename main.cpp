@@ -962,26 +962,24 @@ void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN){
     
     //Calculate difference reward
     for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
-        vector<double> difference_closest_distance;
         for (int policy_number = 0 ; policy_number < teamRover->at(rover_number).network_for_agent.size(); policy_number++) {
-            double temp_difference_distance = 999999999.99999;
-            for (int temp_rover_number = 0 ; temp_rover_number < teamRover->size(); temp_rover_number++) {
-                
-                if (rover_number != temp_rover_number) {
-                    
-                    for (int temp_policy_number = 0 ; temp_policy_number<teamRover->at(temp_rover_number).network_for_agent.size() ; temp_policy_number++) {
-                        
-                        if (teamRover->at(rover_number).network_for_agent.at(policy_number).my_team_number == teamRover->at(temp_rover_number).network_for_agent.at(temp_policy_number).my_team_number) {
-                            
-                            //Then check for calculations
-                            
+            vector<double> difference_closest_distance;
+            for (int cal_distance = 0 ; cal_distance < teamRover->at(rover_number).network_for_agent.at(policy_number).closest_dist_to_poi.size(); cal_distance++) {
+                double temp_difference_distance = 999999999.99999;
+                for (int temp_rover_number = 0 ; temp_rover_number < teamRover->size(); temp_rover_number++) {
+                    if (rover_number != temp_rover_number) {
+                        for (int temp_policy_number = 0 ; temp_policy_number<teamRover->at(temp_rover_number).network_for_agent.size() ; temp_policy_number++) {
+                            if (teamRover->at(rover_number).network_for_agent.at(policy_number).my_team_number == teamRover->at(temp_rover_number).network_for_agent.at(temp_policy_number).my_team_number) {
+                                
+                                //Then check for calculations
+                                
+                            }
                         }
                     }
                 }
             }
         }
     }
-    
 }
 
 
