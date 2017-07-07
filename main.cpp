@@ -893,7 +893,7 @@ void simulation_new_version( vector<Rover>* teamRover, POI* individualPOI,double
 
 void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN){
     
-    //Local reward
+    //Total Local reward
     for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
         for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
             
@@ -908,6 +908,8 @@ void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN){
             teamRover->at(rover_number).network_for_agent.at(policy).local_reward_wrt_team = temp_local_reward;
         }
     }
+    
+    //Objective Local Reward
     
     //Global reward
     //Find closest distance reached by team to POI
@@ -959,27 +961,25 @@ void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN){
     
     
     //Calculate difference reward
-    //First find closest distance
-    for (int team_number = 0 ; team_number < numNN; team_number++) {
-        
-        for (int poi_number = 0 ; poi_number <individualPOI->value_poi_vec.size(); poi_number++) {
-            
-            for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+    for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+        vector<double> difference_closest_distance;
+        for (int policy_number = 0 ; policy_number < teamRover->at(rover_number).network_for_agent.size(); policy_number++) {
+            double temp_difference_distance = 999999999.99999;
+            for (int temp_rover_number = 0 ; temp_rover_number < teamRover->size(); temp_rover_number++) {
                 
-                for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
+                if (rover_number != temp_rover_number) {
                     
-                    for (int policy_exception = 0 ; policy_exception < teamRover->at(rover_number).network_for_agent.size(); policy_exception++) {
+                    for (int temp_policy_number = 0 ; temp_policy_number<teamRover->at(temp_rover_number).network_for_agent.size() ; temp_policy_number++) {
                         
-                        if (policy != policy_exception) {
-                            if (teamRover->at(rover_number).network_for_agent.at(policy_exception).my_team_number == team_number) {
-                                
-                            }
+                        if (teamRover->at(rover_number).network_for_agent.at(policy_number).my_team_number == teamRover->at(temp_rover_number).network_for_agent.at(temp_policy_number).my_team_number) {
+                            
+                            //Then check for calculations
+                            
                         }
                     }
                 }
             }
         }
-        
     }
     
 }
