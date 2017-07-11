@@ -2025,6 +2025,7 @@ int main(int argc, const char * argv[]) {
                 for (int neural_network = 0; neural_network < teamRover.at(rover_number).network_for_agent.size(); neural_network++) {
                     teamRover.at(rover_number).network_for_agent.at(neural_network).closest_dist_to_poi.clear();
                     teamRover.at(rover_number).network_for_agent.at(neural_network).objective_reward_local.clear();
+                    teamRover.at(rover_number).network_for_agent.at(neural_network).objective_reward_global.clear();
                 }
             }
             
