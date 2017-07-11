@@ -1075,14 +1075,26 @@ void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, i
             assert(difference_closest_distance.size() == individualPOI->value_poi_vec.size());
             
             //Calculate difference reward
-            
+            double temp_difference_reward = 0 ;
+            for (int loop_counter = 0 ; loop_counter < difference_closest_distance.size(); loop_counter++) {
+                temp_difference_reward += ((individualPOI->value_poi_vec.at(loop_counter))/(difference_closest_distance.at(loop_counter)));
+            }
+            for (int other_rover = 0 ; other_rover < teamRover->size(); other_rover++) {
+                for (int other_policy = 0 ; other_policy < teamRover->size(); other_policy++) {
+                    if ((other_rover != rover_number)) {
+                        if (teamRover->at(other_rover).network_for_agent.at(other_policy).my_team_number == teamRover->at(rover_number).network_for_agent.at(policy_number).my_team_number) {
+                            teamRover->at(other_rover).network_for_agent.at(other_policy).difference_reward_wrt_team = temp_difference_reward;
+                        }
+                    }
+                }
+            }
             
         }
     }
 }
 
 
-void select_hall_of_fame(vector<Rover>* teamRover,POI* individualPOI){
+void select_hall_of_fame(vector<Rover>* teamRover,POI* individualPOI, int number_of_objectives){
     //Makes all hall of fame to false
     for (int rover_number =0 ; rover_number<teamRover->size(); rover_number++) {
         for (int neural_network = 0 ; neural_network < teamRover->at(rover_number).network_for_agent.size(); neural_network++) {
@@ -1090,19 +1102,42 @@ void select_hall_of_fame(vector<Rover>* teamRover,POI* individualPOI){
         }
     }
     
-    for (int rover_number = 0; rover_number <teamRover->size(); rover_number++) {
-        double temp_best_global = 0.0;
-        int index = 0;
-        for (int neural_network = 0; neural_network <teamRover->at(rover_number).network_for_agent.size(); neural_network++) {
-            // check for highest value
-            if (temp_best_global < teamRover->at(rover_number).network_for_agent.at(neural_network).global_reward_wrt_team) {
-                temp_best_global = teamRover->at(rover_number).network_for_agent.at(neural_network).global_reward_wrt_team;
-                index = neural_network;
+    int objective_number = 0;
+    assert(objective_number < number_of_objectives);
+    
+    switch (objective_number ) {
+        case 0:
+            for (int rover_number =0 ; rover_number < teamRover->size() ; rover_number++) {
+                double best_objective = 0;
+                int index = 0;
+                for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
+                    if (best_objective > teamRover->at(rover_number).network_for_agent.at(policy).objective_reward_difference.at(objective_number)) {
+                        best_objective = teamRover->at(rover_number).network_for_agent.at(policy).objective_reward_difference.at(objective_number);
+                        index = policy;
+                    }
+                }
+                teamRover->at(rover_number).network_for_agent.at(index).hall_of_fame = true;
             }
-        }
-        
-        teamRover->at(rover_number).network_for_agent.at(index).hall_of_fame = true;
+            break;
+            
+        default:
+            for (int rover_number = 0; rover_number <teamRover->size(); rover_number++) {
+                double temp_best_global = 0.0;
+                int index = 0;
+                for (int neural_network = 0; neural_network <teamRover->at(rover_number).network_for_agent.size(); neural_network++) {
+                    // check for highest value
+                    if (temp_best_global < teamRover->at(rover_number).network_for_agent.at(neural_network).difference_reward_wrt_team) {
+                        temp_best_global = teamRover->at(rover_number).network_for_agent.at(neural_network).difference_reward_wrt_team;
+                        index = neural_network;
+                    }
+                }
+                
+                teamRover->at(rover_number).network_for_agent.at(index).hall_of_fame = true;
+            }
+            break;
     }
+    
+    
 }
 
 
