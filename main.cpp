@@ -893,7 +893,7 @@ void simulation_new_version( vector<Rover>* teamRover, POI* individualPOI,double
 }
 
 void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, int number_of_objectives){
-    
+    bool full_verbose = true;
     //Total Local reward
     for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
         for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
@@ -911,42 +911,47 @@ void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, i
     }
     
     
-    
-    for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
-        for (int policy = 0 ; policy<teamRover->at(rover_number).network_for_agent.size(); policy++) {
-            int count_objective = 0;
-            bool change_objective = false;
-            
-            for (int change_value = 0 ; change_value < teamRover->at(rover_number).network_for_agent.at(change_value).closest_dist_to_poi.size(); change_value++) {
-                if (change_value < 0 ) {
-                    if(individualPOI->value_poi_vec.at(change_value) != individualPOI->value_poi_vec.at(change_value - 1)){
-                        change_objective = true;
-                    }
+    if (full_verbose) {
+        cout<<"Print"<<endl;
+        for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+            for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
+                for (int distance = 0 ; distance < teamRover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.size(); distance++) {
+                    cout<< teamRover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.at(distance)<<"\t";
                 }
-                
-                if (change_objective) {
-                    //Check if reward changed if not then continue this for loop
-                    double temp_local_reward = 0;
-                    for (int closest_distance_number = 0; closest_distance_number<teamRover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.size(); closest_distance_number++) {
-                        temp_local_reward += ((individualPOI->value_poi_vec.at(closest_distance_number))/(teamRover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.at(closest_distance_number)));
-                    }
-                    
-                    teamRover->at(rover_number).network_for_agent.at(policy).objective_reward_local.push_back(temp_local_reward);
-                    change_objective = false;
-                }
+                cout<<endl;
             }
-            
+            cout<<endl;
         }
-    }
-    
-    for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
-        for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
-            assert(teamRover->at(rover_number).network_for_agent.at(policy).objective_reward_local.size() == number_of_objectives);
+        
+        for (int value = 0 ; value < individualPOI->value_poi_vec.size(); value++) {
+            cout<< individualPOI->value_poi_vec.at(value)<<"\t";
         }
+        cout<<endl;
+        
     }
     
     
     //Objective Local Reward
+    for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+        for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
+             double value_check = -11111111.1111111;
+            double temp_distance = 0 ;
+            for (int distance = 0 ; distance < teamRover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.size(); distance++) {
+                //First time or when value of POI changes
+                if ((distance == 0) || (value_check != individualPOI->value_poi_vec.at(distance))) {
+                    if( (distance !=0)) {
+                        teamRover->at(rover_number).network_for_agent.at(policy).objective_reward_local.push_back(temp_distance);
+                    }
+                    temp_distance = 0;
+                    value_check = individualPOI->value_poi_vec.at(distance);
+                    
+                }
+                temp_distance += ((individualPOI->value_poi_vec.at(distance))/(teamRover->at(rover_number).network_for_agent.at(policy).closest_dist_to_poi.at(distance)));
+            }
+            teamRover->at(rover_number).network_for_agent.at(policy).objective_reward_local.push_back(temp_distance);
+            assert(teamRover->at(rover_number).network_for_agent.at(policy).objective_reward_local.size() == number_of_objectives);
+        }
+    }
     
     //Global reward
     //Find closest distance reached by team to POI
