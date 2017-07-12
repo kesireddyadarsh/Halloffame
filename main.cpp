@@ -96,9 +96,7 @@ public:
     vector<double> closest_dist_to_poi;
     
     //For team
-    int my_id_wrt_rover;
     int my_team_number;
-    int my_rover_number;
     
     //For team
     double local_reward_wrt_team;
@@ -638,13 +636,18 @@ void repopulate(vector<Rover>* teamRover,int number_of_neural_network){
 }
 
 void ccea(vector<Rover>* teamRover,POI* individualPOI, int numNN, int number_of_objectives){
-    bool verbose = true;
+    bool verbose = false;
     
     // Remove low fitness policies
     for (int rover_number = 0; rover_number < teamRover->size(); rover_number++) {
-        cout<<"Rover Number \t :::"<<rover_number<<endl;
+        if (verbose) {
+            cout<<"Rover Number \t :::"<<rover_number<<endl;
+        }
+        
         for (int policy = 0; policy < numNN/2; policy++) {
-            cout<<"policy \t :::"<<policy<<endl;
+            if (verbose) {
+                cout<<"policy \t :::"<<policy<<endl;
+            }
             int random_number_1 = rand()%teamRover->at(rover_number).network_for_agent.size();
             int random_number_2 = rand()%teamRover->at(rover_number).network_for_agent.size();
             while ((random_number_1 == random_number_2) || (random_number_1 == teamRover->at(rover_number).network_for_agent.size()) || (random_number_2 == teamRover->at(rover_number).network_for_agent.size())) {
@@ -1786,7 +1789,7 @@ void test_all_sensors(){
  ***********************************************************************/
 
 void create_teams(vector<Rover>* p_rover, int numNN){
-    bool verbose = true;
+    bool verbose = false;
     
     //Create teams
     for (int team_number = 0; team_number < numNN; team_number++) {
@@ -1860,7 +1863,7 @@ void set_teams_to_inital(vector<Rover>* p_rover, int numNN){
 
 int main(int argc, const char * argv[]) {
     cout << "Hello, World!\n"<<endl;
-    bool VERBOSE = true;
+    bool VERBOSE = false;
     bool full_verbose = false;
     srand((unsigned)time(NULL));
     if (test_simulation) {
