@@ -638,7 +638,46 @@ void repopulate(vector<Rover>* teamRover,int number_of_neural_network){
 }
 
 void ccea(vector<Rover>* teamRover,POI* individualPOI, int numNN, int number_of_objectives){
+    // Remove low fitness policies
+    for (int rover_number = 0; rover_number <teamRover->size()/2; rover_number++) {
+        int random_number_1 = rand()%numNN;
+        int random_number_2 = rand()%numNN;
+        while (random_number_1 == random_number_2) {
+            random_number_2 = rand()%numNN;
+        }
+        
+        //Select 1 for local reward 2 for global reward 3 for difference reward
+        
+        int type_of_selection = 1;
+        switch (type_of_selection) {
+            case 1:
+                if (teamRover->at(rover_number).network_for_agent.at(random_number_1).local_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).local_reward_wrt_team) {
+                    //kill two
+                }else{
+                    //kill one
+                }
+                break;
+            
+            case 2:
+                if (teamRover->at(rover_number).network_for_agent.at(random_number_1).global_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).global_reward_wrt_team) {
+                    //kill two
+                }else{
+                    //kill one
+                }
+                break;
+                
+            case 3:
+                if (teamRover->at(rover_number).network_for_agent.at(random_number_1).difference_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).difference_reward_wrt_team) {
+                    //kill two
+                }else{
+                    //kill one
+                }
+                break;
+            }
+    }
     
+    //Fill in the blank once
+    repopulate(teamRover, numNN);
 }
 
 
