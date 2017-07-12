@@ -638,42 +638,59 @@ void repopulate(vector<Rover>* teamRover,int number_of_neural_network){
 }
 
 void ccea(vector<Rover>* teamRover,POI* individualPOI, int numNN, int number_of_objectives){
+    bool verbose = true;
+    
     // Remove low fitness policies
-    for (int rover_number = 0; rover_number <teamRover->size()/2; rover_number++) {
-        int random_number_1 = rand()%numNN;
-        int random_number_2 = rand()%numNN;
-        while (random_number_1 == random_number_2) {
-            random_number_2 = rand()%numNN;
-        }
-        
-        //Select 1 for local reward 2 for global reward 3 for difference reward
-        
-        int type_of_selection = 1;
-        switch (type_of_selection) {
-            case 1:
-                if (teamRover->at(rover_number).network_for_agent.at(random_number_1).local_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).local_reward_wrt_team) {
-                    //kill two
-                }else{
-                    //kill one
-                }
-                break;
-            
-            case 2:
-                if (teamRover->at(rover_number).network_for_agent.at(random_number_1).global_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).global_reward_wrt_team) {
-                    //kill two
-                }else{
-                    //kill one
-                }
-                break;
-                
-            case 3:
-                if (teamRover->at(rover_number).network_for_agent.at(random_number_1).difference_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).difference_reward_wrt_team) {
-                    //kill two
-                }else{
-                    //kill one
-                }
-                break;
+    for (int rover_number = 0; rover_number < teamRover->size(); rover_number++) {
+        cout<<"Rover Number \t :::"<<rover_number<<endl;
+        for (int policy = 0; policy < numNN/2; policy++) {
+            cout<<"policy \t :::"<<policy<<endl;
+            int random_number_1 = rand()%teamRover->at(rover_number).network_for_agent.size();
+            int random_number_2 = rand()%teamRover->at(rover_number).network_for_agent.size();
+            while ((random_number_1 == random_number_2) || (random_number_1 == teamRover->at(rover_number).network_for_agent.size()) || (random_number_2 == teamRover->at(rover_number).network_for_agent.size())) {
+                random_number_2 = rand()%teamRover->at(rover_number).network_for_agent.size();
+                random_number_1 = rand()%teamRover->at(rover_number).network_for_agent.size();
             }
+            
+            //Select 1 for local reward 2 for global reward 3 for difference reward
+            
+            int type_of_selection = 1;
+            switch (type_of_selection) {
+                case 1:
+                    if (teamRover->at(rover_number).network_for_agent.at(random_number_1).local_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).local_reward_wrt_team) {
+                        //kill two
+                        teamRover->at(rover_number).network_for_agent.erase(teamRover->at(rover_number).network_for_agent.begin()+random_number_2);
+                    }else{
+                        //kill one
+                        teamRover->at(rover_number).network_for_agent.erase(teamRover->at(rover_number).network_for_agent.begin()+random_number_1);
+                    }
+                    break;
+                    
+                case 2:
+                    if (teamRover->at(rover_number).network_for_agent.at(random_number_1).global_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).global_reward_wrt_team) {
+                        //kill two
+                        teamRover->at(rover_number).network_for_agent.erase(teamRover->at(rover_number).network_for_agent.begin()+random_number_2);
+                    }else{
+                        //kill one
+                        teamRover->at(rover_number).network_for_agent.erase(teamRover->at(rover_number).network_for_agent.begin()+random_number_1);
+                    }
+                    break;
+                    
+                case 3:
+                    if (teamRover->at(rover_number).network_for_agent.at(random_number_1).difference_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).difference_reward_wrt_team) {
+                        //kill two
+                        teamRover->at(rover_number).network_for_agent.erase(teamRover->at(rover_number).network_for_agent.begin()+random_number_2);
+                    }else{
+                        //kill one
+                        teamRover->at(rover_number).network_for_agent.erase(teamRover->at(rover_number).network_for_agent.begin()+random_number_1);
+                    }
+                    break;
+            }
+        }
+    }
+    
+    for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+        assert(teamRover->at(rover_number).network_for_agent.size() == numNN/2);
     }
     
     //Fill in the blank once
@@ -762,7 +779,7 @@ void simulation_new_version( vector<Rover>* teamRover, POI* individualPOI,double
 }
 
 void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, int number_of_objectives){
-    bool full_verbose = true;
+    bool full_verbose = false;
     //Total Local reward
     for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
         for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
@@ -1769,7 +1786,7 @@ void test_all_sensors(){
  ***********************************************************************/
 
 void create_teams(vector<Rover>* p_rover, int numNN){
-    bool verbose = false;
+    bool verbose = true;
     
     //Create teams
     for (int team_number = 0; team_number < numNN; team_number++) {
@@ -1928,7 +1945,7 @@ int main(int argc, const char * argv[]) {
         
         //Second set up neural networks
         //Create numNN of neural network with pointer
-        int numNN = 2;
+        int numNN = 4;
         vector<unsigned> topology;
         topology.clear();
         topology.push_back(8);
@@ -1946,8 +1963,8 @@ int main(int argc, const char * argv[]) {
 //        exit(100);
         
         //Generations
-        for(int generation =0 ; generation < 2 ;generation++){
-            
+        for(int generation =0 ; generation < 200 ;generation++){
+            cout<<"Generation \t \t :::"<<generation<<endl;
             //First Create teams
             set_teams_to_inital(p_rover, numNN);
             create_teams(p_rover, numNN);
