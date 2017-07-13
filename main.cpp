@@ -777,7 +777,7 @@ void simulation_new_version( vector<Rover>* teamRover, POI* individualPOI,double
 
 void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, int number_of_objectives){
     bool full_verbose = false;
-    
+    bool verbose = true;
     //Total Local reward
     for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
         for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
@@ -933,7 +933,14 @@ void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, i
     
     //Calculate difference reward
     for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+        if (verbose) {
+            cout<<"Rover ::"<<rover_number<<endl;
+        }
         for (int policy_number = 0 ; policy_number < teamRover->at(rover_number).network_for_agent.size(); policy_number++) {
+            if (verbose) {
+                cout<<"Policies ::"<<policy_number<<endl;
+            }
+            
             
             vector<double> difference_closest_distance;
             for (int cal_distance = 0 ; cal_distance < teamRover->at(rover_number).network_for_agent.at(policy_number).closest_dist_to_poi.size(); cal_distance++) {
@@ -952,7 +959,12 @@ void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, i
                 }
                 difference_closest_distance.push_back(temp_difference_distance);
             }
-            
+            if (full_verbose) {
+                for (int loop_counter = 0 ; loop_counter < difference_closest_distance.size(); loop_counter++) {
+                    cout<<difference_closest_distance.at(loop_counter)<<"\t";
+                }
+                cout<<endl;
+            }
             assert(difference_closest_distance.size() == individualPOI->value_poi_vec.size());
             
             //Calculate difference reward
@@ -960,10 +972,16 @@ void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, i
             for (int loop_counter = 0 ; loop_counter < difference_closest_distance.size(); loop_counter++) {
                 temp_difference_reward += ((individualPOI->value_poi_vec.at(loop_counter))/(difference_closest_distance.at(loop_counter)));
             }
+            if (full_verbose) {
+                cout<<"This is temp_difference_reward::::"<<temp_difference_reward<<endl;
+            }
+            
             for (int other_rover = 0 ; other_rover < teamRover->size(); other_rover++) {
-                for (int other_policy = 0 ; other_policy < teamRover->size(); other_policy++) {
-                    if ((other_rover != rover_number)) {
+//                cout<<"Inside loop rover number ::::::::::: \t"<<other_rover<<endl;
+                if ((other_rover != rover_number)) {
+                    for (int other_policy = 0 ; other_policy < teamRover->at(other_rover).network_for_agent.size(); other_policy++) {
                         if (teamRover->at(other_rover).network_for_agent.at(other_policy).my_team_number == teamRover->at(rover_number).network_for_agent.at(policy_number).my_team_number) {
+//                            cout<<"Are you coming here"<<endl;
                             teamRover->at(other_rover).network_for_agent.at(other_policy).difference_reward_wrt_team = temp_difference_reward;
                         }
                     }
