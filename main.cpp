@@ -651,7 +651,7 @@ void ccea(vector<Rover>* teamRover,POI* individualPOI, int numNN, int number_of_
             
             //Select 1 for local reward 2 for global reward 3 for difference reward
             
-            int type_of_selection = 1;
+            int type_of_selection = 3;
             switch (type_of_selection) {
                 case 1:
                     if (teamRover->at(rover_number).network_for_agent.at(random_number_1).local_reward_wrt_team < teamRover->at(rover_number).network_for_agent.at(random_number_2).local_reward_wrt_team) {
@@ -727,7 +727,7 @@ void simulation_new_version( vector<Rover>* teamRover, POI* individualPOI,double
     }
 
     
-    for (int time_step = 0 ; time_step < 10 ; time_step++) {
+    for (int time_step = 0 ; time_step < 20000 ; time_step++) {
         if (verbose || full_verbose) {
             cout<<"Print X and Y location"<<endl;
             cout<<teamRover->at(local_rover_number).x_position<<"\t"<<teamRover->at(local_rover_number).y_position<<endl;
@@ -1048,6 +1048,19 @@ void select_hall_of_fame(vector<Rover>* teamRover,POI* individualPOI, int number
     }
     
     
+}
+
+void print_to_text(vector<Rover>* teamRover){
+    FILE* pfile;
+    pfile = fopen("All_Values","a");
+    fprintf(pfile, "Generation \n");
+    for (int rover_number = 0; rover_number <teamRover->size(); rover_number++) {
+        for (int policy = 0; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
+            fprintf(pfile, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).difference_reward_wrt_team);
+        }
+        fprintf(pfile, "\n");
+    }
+    fclose(pfile);
 }
 
 
@@ -1781,7 +1794,7 @@ void test_all_sensors(){
  ***********************************************************************/
 
 void create_teams(vector<Rover>* p_rover, int numNN){
-    bool verbose = true;
+    bool verbose = false;
     
     if (verbose) {
         cout<<"This are team numbers<<<"<<endl;
@@ -1800,10 +1813,10 @@ void create_teams(vector<Rover>* p_rover, int numNN){
             int temp = rand()%numNN;
             for (int size_number = 0; size_number < temp_number_holder.size(); size_number++) {
                 
-                if (temp_number_holder.at(size_number) == temp) {
-                    temp = rand()%numNN;
-                    size_number = -1;
-                }
+//                if (temp_number_holder.at(size_number) == temp) {
+//                    temp = rand()%numNN;
+//                    size_number = -1;
+//                }
                 
                 while (p_rover->at(rover_number).network_for_agent.at(temp).my_team_number != 9999999) {
                     temp = rand()%numNN;
@@ -1824,7 +1837,7 @@ void create_teams(vector<Rover>* p_rover, int numNN){
         assert(temp_number_holder.size() == p_rover->size());
         
         for (int rover_number = 0 ; rover_number < p_rover->size(); rover_number++) {
-            p_rover->at(rover_number).network_for_agent.at(temp_number_holder.at(rover_number)).my_team_number = temp_number_holder.at(rover_number);
+            p_rover->at(rover_number).network_for_agent.at(temp_number_holder.at(rover_number)).my_team_number = team_number;
         }
         
         if (verbose) {
@@ -1960,7 +1973,7 @@ int main(int argc, const char * argv[]) {
         
         //Second set up neural networks
         //Create numNN of neural network with pointer
-        int numNN = 4;
+        int numNN = 10;
         vector<unsigned> topology;
         topology.clear();
         topology.push_back(8);
@@ -1978,7 +1991,7 @@ int main(int argc, const char * argv[]) {
 //        exit(100);
         
         //Generations
-        for(int generation =0 ; generation < 2 ;generation++){
+        for(int generation =0 ; generation < 500 ;generation++){
             cout<<"Generation \t \t :::"<<generation<<endl;
             //First Create teams
             set_teams_to_inital(p_rover, numNN);
@@ -2005,9 +2018,10 @@ int main(int argc, const char * argv[]) {
                     }
                 }
             }
-            
+            cout<<"simulation"<<endl;
             for (int rover_number = 0 ; rover_number < p_rover->size(); rover_number++) {
                 for (int policy = 0 ; policy < teamRover.at(rover_number).network_for_agent.size(); policy++) {
+                    
                     simulation_new_version(p_rover, p_poi, scaling_number, policy, rover_number);
                 }
             }
@@ -2025,6 +2039,7 @@ int main(int argc, const char * argv[]) {
             }
             
             calculate_rewards(p_rover,p_poi,numNN,number_of_objectives);
+            print_to_text(p_rover);
             ccea(p_rover,p_poi,numNN,number_of_objectives);
             
         }
