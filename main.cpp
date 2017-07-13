@@ -777,6 +777,7 @@ void simulation_new_version( vector<Rover>* teamRover, POI* individualPOI,double
 
 void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, int number_of_objectives){
     bool full_verbose = false;
+    
     //Total Local reward
     for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
         for (int policy = 0 ; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
@@ -792,8 +793,6 @@ void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, i
             teamRover->at(rover_number).network_for_agent.at(policy).local_reward_wrt_team = temp_local_reward;
         }
     }
-    
-    
     if (full_verbose) {
         cout<<"Print"<<endl;
         for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
@@ -953,6 +952,7 @@ void calculate_rewards(vector<Rover>* teamRover,POI* individualPOI, int numNN, i
                 }
                 difference_closest_distance.push_back(temp_difference_distance);
             }
+            
             assert(difference_closest_distance.size() == individualPOI->value_poi_vec.size());
             
             //Calculate difference reward
@@ -1052,15 +1052,38 @@ void select_hall_of_fame(vector<Rover>* teamRover,POI* individualPOI, int number
 
 void print_to_text(vector<Rover>* teamRover){
     FILE* pfile;
-    pfile = fopen("All_Values","a");
-    fprintf(pfile, "Generation \n");
+    FILE* pfile_1;
+    FILE* pfile_2;
+    FILE* pfile_3;
+    pfile = fopen("Difference_1","a");
+    pfile_1 = fopen("Difference_2","a");
+    pfile_2 = fopen("global_1", "a");
+    pfile_3 = fopen("gloabl_2","a");
     for (int rover_number = 0; rover_number <teamRover->size(); rover_number++) {
         for (int policy = 0; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
-            fprintf(pfile, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).difference_reward_wrt_team);
+            if (rover_number == 0) {
+                fprintf(pfile, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).difference_reward_wrt_team);
+                fprintf(pfile_2, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).global_reward_wrt_team);
+            }
+            if (rover_number == 1) {
+                fprintf(pfile_1, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).difference_reward_wrt_team);
+                fprintf(pfile_3, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).global_reward_wrt_team);
+            }
+            
         }
-        fprintf(pfile, "\n");
+        if (rover_number == 0) {
+            fprintf(pfile, "\n");
+            fprintf(pfile_2, "\n");
+        }
+        if (rover_number == 1 ) {
+            fprintf(pfile_1, "\n");
+            fprintf(pfile_3, "\n");
+        }
     }
     fclose(pfile);
+    fclose(pfile_1);
+    fclose(pfile_2);
+    fclose(pfile_3);
 }
 
 
@@ -2039,7 +2062,7 @@ int main(int argc, const char * argv[]) {
             }
             
             calculate_rewards(p_rover,p_poi,numNN,number_of_objectives);
-            print_to_text(p_rover);
+            //print_to_text(p_rover);
             ccea(p_rover,p_poi,numNN,number_of_objectives);
             
         }
