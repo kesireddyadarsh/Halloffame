@@ -108,12 +108,6 @@ public:
     vector<double> objective_reward_local;
     vector<double> objective_reward_global;
     vector<double> objective_reward_difference;
-    
-    //NSGA II
-    vector<double> my_domination;
-    double number_dominated_me;
-    double my_rank;
-    double crowding_distance;
 };
 
 Net::Net(vector<unsigned> topology){
@@ -1057,8 +1051,6 @@ void select_hall_of_fame(vector<Rover>* teamRover,POI* individualPOI, int number
 }
 
 
-
-
 /*****************************************************************
  Test Rover in environment
  ***************************************************************/
@@ -1789,7 +1781,17 @@ void test_all_sensors(){
  ***********************************************************************/
 
 void create_teams(vector<Rover>* p_rover, int numNN){
-    bool verbose = false;
+    bool verbose = true;
+    
+    if (verbose) {
+        cout<<"This are team numbers<<<"<<endl;
+        for (int rover_number = 0; rover_number < p_rover->size(); rover_number++) {
+            for (int policy = 0; policy < p_rover->at(rover_number).network_for_agent.size(); policy++) {
+                cout<<p_rover->at(rover_number).network_for_agent.at(policy).my_team_number<<"\t";
+            }
+            cout<<endl;
+        }
+    }
     
     //Create teams
     for (int team_number = 0; team_number < numNN; team_number++) {
@@ -1823,6 +1825,16 @@ void create_teams(vector<Rover>* p_rover, int numNN){
         
         for (int rover_number = 0 ; rover_number < p_rover->size(); rover_number++) {
             p_rover->at(rover_number).network_for_agent.at(temp_number_holder.at(rover_number)).my_team_number = temp_number_holder.at(rover_number);
+        }
+        
+        if (verbose) {
+            cout<<"This are team numbers<<<"<<endl;
+            for (int rover_number = 0; rover_number < p_rover->size(); rover_number++) {
+                for (int policy = 0; policy < p_rover->at(rover_number).network_for_agent.size(); policy++) {
+                    cout<<p_rover->at(rover_number).network_for_agent.at(policy).my_team_number<<"\t";
+                }
+                cout<<endl;
+            }
         }
     }
     
@@ -1966,7 +1978,7 @@ int main(int argc, const char * argv[]) {
 //        exit(100);
         
         //Generations
-        for(int generation =0 ; generation < 200 ;generation++){
+        for(int generation =0 ; generation < 2 ;generation++){
             cout<<"Generation \t \t :::"<<generation<<endl;
             //First Create teams
             set_teams_to_inital(p_rover, numNN);
