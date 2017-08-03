@@ -11,6 +11,9 @@
 #include <cmath>
 #include <stdlib.h>
 #include <cassert>
+#include <algorithm>
+#include <stdio.h>
+
 
 using namespace std;
 
@@ -501,7 +504,7 @@ double find_scaling_number(){
     while (temp_rand == 0) {
         temp_rand = rand()%100;
     }
-    vector<vector<double>> group_sensors;
+    vector < vector <double> > group_sensors;
     
     for (int temp=0; temp<temp_rand; temp++) {
         R_obj.x_position=rand()%100;
@@ -1177,60 +1180,60 @@ void select_hall_of_fame(vector<Rover>* teamRover,POI* individualPOI, int number
 }
 
 void print_to_text(vector<Rover>* teamRover){
-    //    FILE* pfile;
-    //    FILE* pfile_1;
-    //    FILE* pfile_2;
-    //    FILE* pfile_3;
+    FILE* pfile;
+    FILE* pfile_1;
+    FILE* pfile_2;
+    FILE* pfile_3;
     FILE* pfile_4;
-    //    FILE* pfile_5;
-    //    pfile = fopen("Difference_1","a");
-    //    pfile_1 = fopen("Difference_2","a");
-    //    pfile_2 = fopen("global_1", "a");
-    //    pfile_3 = fopen("gloabl_2","a");
-    pfile_4 = fopen("/Users/adarshkesireddy/Desktop/Test_Run/15 /Total", "a");
-    //    pfile_5 = fopen("Neardistance", "a");
-    //    for (int rover_number = 0; rover_number <teamRover->size(); rover_number++) {
-    //        for (int policy = 0; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
-    //            if (rover_number == 0) {
-    //                fprintf(pfile, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).difference_reward_wrt_team);
-    //                fprintf(pfile_2, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).global_reward_wrt_team);
-    //            }
-    //            if (rover_number == 1) {
-    //                fprintf(pfile_1, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).difference_reward_wrt_team);
-    //                fprintf(pfile_3, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).global_reward_wrt_team);
-    //            }
-    //
-    //        }
-    //        if (rover_number == 0) {
-    //            fprintf(pfile, "\n");
-    //            fprintf(pfile_2, "\n");
-    //        }
-    //        if (rover_number == 1 ) {
-    //            fprintf(pfile_1, "\n");
-    //            fprintf(pfile_3, "\n");
-    //        }
-    //    }
+    FILE* pfile_5;
+    pfile = fopen("Difference_1","a");
+    pfile_1 = fopen("Difference_2","a");
+    pfile_2 = fopen("global_1", "a");
+    pfile_3 = fopen("gloabl_2","a");
+    pfile_4 = fopen("Total", "a");
+     pfile_5 = fopen("Neardistance", "a");
+     for (int rover_number = 0; rover_number <teamRover->size(); rover_number++) {
+            for (int policy = 0; policy < teamRover->at(rover_number).network_for_agent.size(); policy++) {
+                if (rover_number == 0) {
+                    fprintf(pfile, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).difference_reward_wrt_team);
+                    fprintf(pfile_2, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).global_reward_wrt_team);
+                }
+               if (rover_number == 1) {
+                    fprintf(pfile_1, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).difference_reward_wrt_team);
+                    fprintf(pfile_3, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy).global_reward_wrt_team);
+                }
+    
+            }
+           if (rover_number == 0) {
+               fprintf(pfile, "\n");
+                fprintf(pfile_2, "\n");
+            }
+            if (rover_number == 1 ) {
+                fprintf(pfile_1, "\n");
+                fprintf(pfile_3, "\n");
+            }
+        }
     for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
         for (int policy_number = 0; policy_number < teamRover->at(rover_number).network_for_agent.size(); policy_number++) {
             fprintf(pfile_4, "%f \t %f \t %f \n",teamRover->at(rover_number).network_for_agent.at(policy_number).difference_reward_wrt_team,teamRover->at(rover_number).network_for_agent.at(policy_number).global_reward_wrt_team,teamRover->at(rover_number).network_for_agent.at(policy_number).local_reward_wrt_team);
         }
     }
-    //    for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
-    //        for (int policy_number = 0 ; policy_number < teamRover->at(rover_number).network_for_agent.size(); policy_number++) {
-    //            for (int closest_distance = 0; closest_distance< teamRover->at(rover_number).network_for_agent.at(policy_number).closest_dist_to_poi.size(); closest_distance++) {
-    //                fprintf(pfile_5, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy_number).closest_dist_to_poi.at(closest_distance));
-    //            }
-    //            fprintf(pfile_5, "\n");
-    //        }
-    //        fprintf(pfile_5, "\n");
-    //    }
+        for (int rover_number = 0 ; rover_number < teamRover->size(); rover_number++) {
+            for (int policy_number = 0 ; policy_number < teamRover->at(rover_number).network_for_agent.size(); policy_number++) {
+                for (int closest_distance = 0; closest_distance< teamRover->at(rover_number).network_for_agent.at(policy_number).closest_dist_to_poi.size(); closest_distance++) {
+                    fprintf(pfile_5, "%f \t",teamRover->at(rover_number).network_for_agent.at(policy_number).closest_dist_to_poi.at(closest_distance));
+                }
+                fprintf(pfile_5, "\n");
+            }
+            fprintf(pfile_5, "\n");
+        }
     
-    //    fclose(pfile_5);
+     fclose(pfile_5);
     fclose(pfile_4);
-    //    fclose(pfile);
-    //    fclose(pfile_1);
-    //    fclose(pfile_2);
-    //    fclose(pfile_3);
+        fclose(pfile);
+        fclose(pfile_1);
+        fclose(pfile_2);
+        fclose(pfile_3);
 }
 
 
@@ -1440,7 +1443,7 @@ void custom_test(){
 }
 
 //x and y position of poi
-vector<vector<double>> poi_positions;
+vector< vector <double> > poi_positions;
 vector<double> poi_positions_loc;
 
 void stationary_rover_test(double x_start,double y_start){//Pass x_position,y_position
@@ -1450,7 +1453,7 @@ void stationary_rover_test(double x_start,double y_start){//Pass x_position,y_po
     R_obj.reset_sensors();
     
     //x and y position of poi
-    vector<vector<double>> poi_positions;
+    vector< vector <double> > poi_positions;
     vector<double> poi_positions_loc;
     
     R_obj.x_position =x_start;
@@ -1709,7 +1712,7 @@ void two_rovers_test(double x_start, double y_start){
 }
 
 vector<double> row_values;
-vector<vector<double>> assert_check_values;
+vector< vector <double> > assert_check_values;
 
 void fill_assert_check_values(){
     //First set of x , y thetha values
@@ -1902,7 +1905,7 @@ void test_path(double x_start, double y_start){
     
 }
 
-vector<vector<double>> point_x_y_circle;
+vector< vector <double> > point_x_y_circle;
 vector<double> temp;
 
 void find_x_y_test_circle_path(double start_x_position,double start_y_position,double angle){
